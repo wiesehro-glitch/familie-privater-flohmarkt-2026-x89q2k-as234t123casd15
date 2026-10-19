@@ -507,9 +507,7 @@
                         if (target) {
                             selectedItem = target;
                             currentView = 'detail';
-                            // Die URL wurde bereits bereinigt und in der History hinterlegt!
                         } else {
-                            // Link ungültig/gelöscht -> Gehe still zur Startseite
                             currentView = 'home';
                             history.replaceState({ view: 'home' }, '', window.location.href.split('?')[0]);
                         }
@@ -1344,7 +1342,7 @@
             }
 
             let actionButtonsHtml = '<div class="flex gap-2 sm:gap-3">';
-            const shareBtnHtml = `<button id="btn-share" class="w-14 sm:w-16 bg-white border-2 border-green-600 text-green-700 rounded-xl flex items-center justify-center shadow-md hover:bg-green-50 transition text-xl shrink-0" title="Familie informieren (Teilen)"><i class="fa-solid fa-share-nodes"></i></button>`;
+            const shareBtnHtml = `<button id="btn-share" class="w-14 sm:w-16 py-3.5 sm:py-4 bg-white border-2 border-green-600 text-green-700 rounded-xl flex items-center justify-center shadow-md hover:bg-green-50 transition text-xl shrink-0" title="Familie informieren (Teilen)"><i class="fa-solid fa-share-nodes"></i></button>`;
 
             if (!isArchived) {
                 if (!isSold) {
@@ -1352,10 +1350,10 @@
                 } else if (isBuyer) {
                     actionButtonsHtml += `<button id="btn-cancel-buy" class="flex-1 bg-orange-600 text-white font-bold rounded-xl py-3.5 sm:py-4 shadow-md hover:bg-orange-700 transition text-base flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-left"></i> Nee, doch nicht</button>`;
                 } else {
-                     actionButtonsHtml += `<div class="flex-1"></div>`;
+                     actionButtonsHtml += `<div class="flex-1 bg-gray-100 text-gray-500 font-bold rounded-xl py-3.5 sm:py-4 flex items-center justify-center gap-2 border border-gray-200"><i class="fa-solid fa-lock"></i> Vergeben</div>`;
                 }
             } else {
-                actionButtonsHtml += `<div class="flex-1"></div>`; 
+                actionButtonsHtml += `<div class="flex-1 bg-gray-100 text-gray-500 font-bold rounded-xl py-3.5 sm:py-4 flex items-center justify-center gap-2 border border-gray-200"><i class="fa-solid fa-box-archive"></i> Archiviert</div>`; 
             }
             
             actionButtonsHtml += shareBtnHtml;
@@ -1677,4 +1675,4 @@
         initApp();
     </script>
 </body>
-</html>
+</html>``
