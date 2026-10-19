@@ -134,7 +134,7 @@
         let selectedItem = null;
         let initialDataLoaded = false;
         let homeAdminSelected = new Set();
-        let hasNavigated = false; // Neu: Verhindert, dass Zurück-Wischen bei Deep-Links die App schließt
+        let hasNavigated = false;
         
         let currentUser = localStorage.getItem('familyBazarUser') || '';
         let wizardStep = 1;
@@ -256,11 +256,10 @@
         setupPWA();
 
         function initSession() {
-            // Trick für das Verhindern des App-Schließens beim Teilen-Link:
+            // FIX: Kein pushen mehr am Anfang, das verhindert den "Kettenstart" in Chrome.
             if (initialItemId) {
-                history.replaceState({ view: 'home' }, '', cleanUrl); // Unterschiebe Startseite
-                history.pushState({ view: 'detail' }, '', cleanUrl);  // Lege Detailseite oben drauf
                 currentView = 'detail';
+                history.replaceState({ view: 'detail' }, '', cleanUrl);
             } else {
                 history.replaceState({ view: 'home' }, '', cleanUrl);
             }
@@ -310,7 +309,7 @@
 
         function goTo(view) {
             if (currentView === view) return;
-            hasNavigated = true; // Markiere, dass wir uns innerhalb der App bewegt haben
+            hasNavigated = true; 
             currentView = view;
             history.pushState({ view: view }, '');
             
@@ -321,8 +320,9 @@
 
         function goBack() {
             if (currentView !== 'home') {
+                // FIX: Wenn wir von einem Link kommen und der UI-Zurück-Button gedrückt wird, 
+                // erzwingen wir die Startseite, statt die App zu beenden.
                 if (!hasNavigated && initialItemId) {
-                    // Sicherer Fallback: Wenn wir vom Link kommen, erzwingt dieser Button die Startseite
                     goTo('home');
                 } else {
                     window.history.back();
@@ -897,15 +897,8 @@
                         
                         selectedItem = { id: newDocRef.id, name: wizardData.name.trim(), description: wizardData.description.trim(), category: wizardData.category, price: wizardData.price ? Number(wizardData.price) : null, sellerName: currentUser, images: wizardData.images, status: 'available' };
                         
-                        // Konfetti auslösen! 🎉
                         if (window.confetti) {
-                            window.confetti({
-                                particleCount: 150,
-                                spread: 80,
-                                origin: { y: 0.6 },
-                                colors: ['#15803d', '#4ade80', '#fef08a'],
-                                zIndex: 1000
-                            });
+                            window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#15803d', '#4ade80', '#fef08a'], zIndex: 1000 });
                         }
                         
                         goTo('detail');
@@ -1309,6 +1302,11 @@
                         localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
                         
                         selectedItem = { id: newDocRef.id, ...dataObj };
+                        
+                        if (window.confetti) {
+                            window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#15803d', '#4ade80', '#fef08a'], zIndex: 1000 });
+                        }
+                        
                         goTo('detail');
                         showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf das Teilen-Symbol, um der Familie den direkten Link zu schicken!" });
                     }
@@ -1697,3 +1695,4 @@
     </script>
 </body>
 </html>
+```eof
