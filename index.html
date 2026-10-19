@@ -11,8 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="logo.png">
     
-    <!-- Inline Manifest for Single File App (Base64 Encoded JSON) -->
-    <!-- Content: {"name":"Family-Bazar","short_name":"FamBazar","start_url":"./","display":"standalone","background_color":"#f0fdf4","theme_color":"#15803d","icons":[{"src":"logo.png","sizes":"192x192","type":"image/png","purpose":"maskable any"},{"src":"logo.png","sizes":"512x512","type":"image/png","purpose":"maskable any"}]} -->
+    <!-- Inline Manifest for Single File App -->
     <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiRmFtaWx5LUJhemFyIiwic2hvcnRfbmFtZSI6IkZhbUJhemFyIiwic3RhcnRfdXJsIjoiLi8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjZjBmZGY0IiwidGhlbWVfY29sb3IiOiIjMTU4MDNkIiwiaWNvbnMiOlt7InNyYyI6ImxvZ28ucG5nIiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJtYXNrYWJsZSBhbnkifSx7InNyYyI6ImxvZ28ucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJtYXNrYWJsZSBhbnkifV19">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -119,16 +118,34 @@
         let currentUser = localStorage.getItem('familyBazarUser') || '';
         let wizardStep = 1;
         let wizardData = {};
-        let neuFuerDichTimestamp = 0;
+        
+        // Neues System: Gesehene Artikel präzise speichern
+        let seenItems = JSON.parse(localStorage.getItem('fbSeenItems') || '[]');
 
-        // PWA Setup
+        // PWA Setup & Service Worker
         function setupPWA() {
-            // Inline Service Worker for Single File Architecture
+            // Service Worker mit Benachrichtigungs-Klick-Event
             const swCode = `
                 self.addEventListener('install', (event) => self.skipWaiting());
                 self.addEventListener('activate', (event) => event.waitUntil(clients.claim()));
                 self.addEventListener('fetch', (event) => {
                     event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+                });
+                self.addEventListener('notificationclick', (event) => {
+                    event.notification.close();
+                    event.waitUntil(
+                        clients.matchAll({ type: 'window' }).then(windowClients => {
+                            for (let i = 0; i < windowClients.length; i++) {
+                                let client = windowClients[i];
+                                if (client.url.indexOf(self.registration.scope) !== -1 && 'focus' in client) {
+                                    return client.focus();
+                                }
+                            }
+                            if (clients.openWindow) {
+                                return clients.openWindow(self.registration.scope);
+                            }
+                        })
+                    );
                 });
             `;
             const blob = new Blob([swCode], { type: 'application/javascript' });
@@ -140,15 +157,12 @@
                 });
             }
 
-            // Install Prompt Logic
             let deferredPrompt;
             const installBtn = document.getElementById('dropdown-install-app');
             
             window.addEventListener('beforeinstallprompt', (e) => {
-                // Prevent the mini-infobar from appearing on mobile
                 e.preventDefault();
                 deferredPrompt = e;
-                // Update UI notify the user they can install the PWA
                 if (installBtn) installBtn.classList.remove('hidden');
             });
 
@@ -169,20 +183,6 @@
         setupPWA();
 
         function initSession() {
-            const now = Date.now();
-            let lastVisit = localStorage.getItem('fbLastVisit');
-            let currentVisit = localStorage.getItem('fbCurrentVisit');
-
-            if (!currentVisit || (now - parseInt(currentVisit)) > 30 * 60 * 1000) {
-                lastVisit = currentVisit || (now - 24 * 60 * 60 * 1000).toString();
-                localStorage.setItem('fbLastVisit', lastVisit);
-                currentVisit = now.toString();
-                localStorage.setItem('fbCurrentVisit', currentVisit);
-            } else {
-                localStorage.setItem('fbCurrentVisit', now.toString());
-            }
-            neuFuerDichTimestamp = parseInt(lastVisit);
-            
             history.replaceState({ view: 'home' }, '');
         }
         initSession();
@@ -255,23 +255,21 @@
             renderCurrentView();
         });
 
+        // Optimierte Benachrichtigungen für PWAs über den Service Worker
         function showNotification(title, body, iconUrl) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                try {
-                    const notification = new Notification(title, {
+            if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(title, {
                         body: body,
-                        icon: iconUrl || 'https://placehold.co/200x200/15803d/ffffff?text=Neu',
-                        badge: 'https://placehold.co/100x100/15803d/ffffff?text=Bazar',
+                        icon: iconUrl || 'logo.png',
+                        badge: 'logo.png',
                         vibrate: [200, 100, 200]
                     });
-                    notification.onclick = function() {
-                        window.focus();
-                        goTo('home');
-                        this.close();
-                    };
-                } catch (e) {
-                    console.warn("Browser blockiert Notification.", e);
-                }
+                });
+            } else if ('Notification' in window && Notification.permission === 'granted') {
+                // Fallback für Desktop
+                const notification = new Notification(title, { body: body, icon: iconUrl || 'logo.png' });
+                notification.onclick = function() { window.focus(); goTo('home'); this.close(); };
             }
         }
 
@@ -445,7 +443,6 @@
                     if (updatedItem) selectedItem = updatedItem;
                 }
                 
-                localStorage.setItem('fbCurrentVisit', Date.now().toString());
                 renderCurrentView();
 
             }, (error) => {
@@ -580,6 +577,7 @@
             document.getElementById('btn-back-admin').onclick = () => { goBack(); };
         }
 
+        // ... [Wizard Code bleibt unverändert] ...
         function renderWizard() {
             const formContainer = document.createElement('div');
             formContainer.className = 'p-5 sm:p-8 fade-in w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl my-6 border border-green-50 flex flex-col relative pb-24';
@@ -725,7 +723,7 @@
                     btnNext.disabled = true;
                     btnNext.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Lade...';
                     try {
-                        await addDoc(collection(db, collPath), {
+                        const newDocRef = await addDoc(collection(db, collPath), {
                             name: wizardData.name.trim(),
                             description: wizardData.description.trim(),
                             category: wizardData.category,
@@ -736,6 +734,10 @@
                             buyerName: null,
                             timestamp: Date.now()
                         });
+                        // Eigenen Artikel direkt als gelesen markieren
+                        seenItems.push(newDocRef.id);
+                        localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
+                        
                         goTo('home');
                         showModal({ title: "Super!", message: "Dein Artikel ist online." });
                     } catch (e) {
@@ -766,14 +768,27 @@
 
         function createItemCard(item) {
             const card = document.createElement('div');
-            card.className = 'bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden cursor-pointer transform transition hover:-translate-y-1 hover:shadow-md flex flex-col';
-            card.onclick = () => { selectedItem = item; goTo('detail'); };
+            card.className = 'bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden cursor-pointer transform transition hover:-translate-y-1 hover:shadow-md flex flex-col relative';
+            
+            // Neuer Indikator
+            const isNew = !seenItems.includes(item.id) && item.sellerName !== currentUser;
+
+            card.onclick = () => { 
+                selectedItem = item; 
+                // Als gesehen markieren, wenn angeklickt
+                if (isNew) {
+                    seenItems.push(item.id);
+                    localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
+                }
+                goTo('detail'); 
+            };
             
             const isSold = item.status === 'sold';
             const isArchived = item.status === 'archived';
             const thumb = item.images && item.images.length > 0 ? item.images[0] : null;
             
             card.innerHTML = `
+                ${isNew && !isArchived ? `<div class="absolute -right-2 -top-2 bg-amber-400 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-md z-20"><i class="fa-solid fa-sparkles"></i></div>` : ''}
                 <div class="relative w-full h-40 sm:h-48 bg-green-50 shrink-0">
                     ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover ${(isSold || isArchived) ? 'opacity-40 grayscale' : ''}" />` : `<div class="flex items-center justify-center h-full text-green-200"><i class="fa-solid fa-camera text-4xl"></i></div>`}
                     ${isSold ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-2"><span class="bg-red-500/90 backdrop-blur-sm text-white text-xs sm:text-sm font-bold py-1.5 px-3 rounded-xl uppercase tracking-wider shadow-lg transform -rotate-12 border border-red-400 text-center leading-tight">Vergeben an<br>${item.buyerName || 'jemand'}</span></div>` : ''}
@@ -822,12 +837,16 @@
             
             const catScroll = document.createElement('div');
             catScroll.className = 'flex overflow-x-auto hide-scroll gap-2 pb-1 max-w-4xl mx-auto';
+            
+            // Check wie viele neu sind für den Badge
+            const countNew = items.filter(i => !seenItems.includes(i.id) && i.sellerName !== currentUser && i.status !== 'archived').length;
+
             categories.forEach(cat => {
                 const btn = document.createElement('button');
-                btn.className = `whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 ${currentFilter === cat ? 'bg-green-700 text-white shadow-md transform scale-105' : 'bg-white text-green-800 border border-green-200 hover:bg-green-50'}`;
+                btn.className = `whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 relative ${currentFilter === cat ? 'bg-green-700 text-white shadow-md transform scale-105' : 'bg-white text-green-800 border border-green-200 hover:bg-green-50'}`;
                 
                 if (cat === 'Neu für Dich') {
-                    btn.innerHTML = `<i class="fa-solid fa-sparkles text-amber-300"></i> Neu für Dich`;
+                    btn.innerHTML = `<i class="fa-solid fa-sparkles text-amber-300"></i> Neu für Dich ${countNew > 0 ? `<span class="ml-1 bg-amber-400 text-white text-[10px] px-1.5 py-0.5 rounded-full">${countNew}</span>` : ''}`;
                 } else {
                     btn.textContent = cat;
                 }
@@ -846,8 +865,10 @@
             let filteredItems = items.filter(item => {
                 const isNotArchived = item.status !== 'archived';
                 let matchCat = false;
+                
                 if (currentFilter === 'Alle') matchCat = true;
-                else if (currentFilter === 'Neu für Dich') matchCat = (item.timestamp >= neuFuerDichTimestamp) && (item.sellerName !== currentUser);
+                // Neue Logik für 'Neu für Dich' - Zeigt nur noch wirklich ungesehene!
+                else if (currentFilter === 'Neu für Dich') matchCat = !seenItems.includes(item.id) && (item.sellerName !== currentUser);
                 else matchCat = item.category === currentFilter;
 
                 const term = currentSearch.toLowerCase();
@@ -870,11 +891,27 @@
 
             if (filteredItems.length === 0) {
                 if (currentFilter === 'Neu für Dich') {
-                    container.innerHTML = `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-mug-hot text-6xl mb-4"></i><p class="font-bold text-lg px-4">Seit deinem letzten Besuch wurde nichts Neues hochgeladen.</p></div>`;
+                    container.innerHTML = `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-mug-hot text-6xl mb-4"></i><p class="font-bold text-lg px-4">Du bist auf dem neuesten Stand!</p><p class="text-sm mt-2">Keine ungesehenen Artikel vorhanden.</p></div>`;
                 } else {
                     container.innerHTML = `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-box-open text-6xl mb-4"></i><p class="font-bold text-lg">Keine Artikel gefunden.</p></div>`;
                 }
             } else {
+                
+                // Button zum "Alle als gelesen" markieren
+                if (currentFilter === 'Neu für Dich') {
+                    const markAllContainer = document.createElement('div');
+                    markAllContainer.className = 'mb-6 flex justify-end';
+                    markAllContainer.innerHTML = `<button class="bg-white text-green-700 font-bold px-4 py-2 rounded-xl text-sm border border-green-200 hover:bg-green-50 shadow-sm transition flex items-center gap-2"><i class="fa-solid fa-check-double"></i> Alle als gesehen markieren</button>`;
+                    markAllContainer.querySelector('button').onclick = () => {
+                        filteredItems.forEach(i => {
+                            if (!seenItems.includes(i.id)) seenItems.push(i.id);
+                        });
+                        localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
+                        renderCurrentView();
+                    };
+                    container.appendChild(markAllContainer);
+                }
+
                 const isGrouped = currentSort === 'seller-asc' || currentSort === 'category-asc';
                 let currentGroup = null;
                 let currentGrid = null;
@@ -925,6 +962,7 @@
             });
         }
 
+        // ... [Der restliche Code (renderAddForm, renderItemDetail, renderAdmin) bleibt völlig unverändert] ...
         function renderAddForm(editItem = null) {
             const formContainer = document.createElement('div');
             formContainer.className = 'p-5 sm:p-8 fade-in w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl my-6 border border-green-50';
@@ -1053,7 +1091,10 @@
                         dataObj.status = 'available';
                         dataObj.buyerName = null;
                         dataObj.timestamp = Date.now();
-                        await addDoc(collection(db, collPath), dataObj);
+                        const newDocRef = await addDoc(collection(db, collPath), dataObj);
+                        // Eigene erstellte Artikel direkt als gelesen markieren
+                        seenItems.push(newDocRef.id);
+                        localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
                     }
                     goBack(); 
                 } catch (error) {
@@ -1355,3 +1396,5 @@
     </script>
 </body>
 </html>
+
+```
