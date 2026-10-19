@@ -177,7 +177,13 @@
         setupPWA();
 
         function initSession() {
-            history.replaceState({ view: 'home' }, '');
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('item')) {
+                currentView = 'detail'; // Bereite App vor, um direkt zur Detailansicht zu springen
+                history.replaceState({ view: 'detail' }, '');
+            } else {
+                history.replaceState({ view: 'home' }, '');
+            }
         }
         initSession();
 
@@ -398,8 +404,10 @@
 
         function initApp() {
             onSnapshot(collection(db, collPath), (snapshot) => {
+                const isFirstLoad = !initialDataLoaded;
+
                 snapshot.docChanges().forEach((change) => {
-                    if (change.type === "added" && initialDataLoaded) {
+                    if (change.type === "added" && !isFirstLoad) {
                         const data = change.doc.data();
                         const fullItem = { id: change.doc.id, ...data };
                         if (data.sellerName && data.sellerName.toLowerCase() !== currentUser.toLowerCase()) {
@@ -413,7 +421,23 @@
                 items = [];
                 snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
                 
-                if (currentView === 'detail' && selectedItem) {
+                if (isFirstLoad) {
+                    // Checke, ob ein geteilter Link geöffnet wurde
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const queryItem = urlParams.get('item');
+                    if (queryItem) {
+                        const target = items.find(i => i.id === queryItem);
+                        if (target) {
+                            selectedItem = target;
+                            currentView = 'detail';
+                            // Säubere die URL, damit man normal weiter navigieren kann
+                            window.history.replaceState({ view: 'detail' }, '', window.location.href.split('?')[0]);
+                        } else {
+                            currentView = 'home';
+                            window.history.replaceState({ view: 'home' }, '', window.location.href.split('?')[0]);
+                        }
+                    }
+                } else if (currentView === 'detail' && selectedItem) {
                     const updatedItem = items.find(i => i.id === selectedItem.id);
                     if (updatedItem) selectedItem = updatedItem;
                 }
@@ -566,7 +590,6 @@
                 });
                 html += `</ul>`;
 
-                // Floating Action Bar für Master Archive
                 html += `
                     <div id="admin-bulk-bar" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-4 z-[100] hidden transition-all w-[90%] max-w-sm justify-between">
                         <span id="bulk-count" class="font-bold text-sm whitespace-nowrap">0 gewählt</span>
@@ -584,7 +607,7 @@
 
             if (archivedItems.length > 0) {
                 container.querySelectorAll('.admin-cb').forEach(cb => {
-                    cb.onclick = (e) => e.stopPropagation(); // Klick auf Checkbox öffnet nicht das Item
+                    cb.onclick = (e) => e.stopPropagation(); 
                     cb.onchange = (e) => {
                         if(e.target.checked) adminSelected.add(e.target.dataset.id);
                         else adminSelected.delete(e.target.dataset.id);
@@ -785,10 +808,9 @@
                         seenItems.push(newDocRef.id);
                         localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
                         
-                        // Direkt in die Detail-Ansicht des neuen Artikels springen, damit man ihn teilen kann!
                         selectedItem = { id: newDocRef.id, name: wizardData.name.trim(), description: wizardData.description.trim(), category: wizardData.category, price: wizardData.price ? Number(wizardData.price) : null, sellerName: currentUser, images: wizardData.images, status: 'available' };
                         goTo('detail');
-                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf das Teilen-Symbol, um Bescheid zu sagen!" });
+                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf das Teilen-Symbol, um der Familie den direkten Link zu schicken!" });
                     } catch (e) {
                         showModal({ title: "Fehler", message: e.message });
                         btnNext.disabled = false;
@@ -1140,7 +1162,7 @@
                         
                         selectedItem = { id: newDocRef.id, ...dataObj };
                         goTo('detail');
-                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf das Teilen-Symbol, um Bescheid zu sagen!" });
+                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf das Teilen-Symbol, um der Familie den direkten Link zu schicken!" });
                     }
                 } catch (error) {
                     showModal({ title: "Fehler", message: error.message });
@@ -1258,15 +1280,20 @@
 
             mainContent.appendChild(detailContainer);
 
+            // Geteilte URL generieren
             const btnShare = document.getElementById('btn-share');
             if (btnShare) {
                 btnShare.onclick = async () => {
                     const priceText = item.price ? item.price + ' €' : 'Gratis';
-                    const text = `Hey, ich habe gerade "${item.name}" für ${priceText} in den Family-Bazar gestellt! Schau mal rein.`;
+                    const text = `Schau mal, diesen Artikel gibt es im Family-Bazar: "${item.name}" für ${priceText}.`;
+                    
+                    // URL mit speziellem "item" Parameter generieren
+                    const shareUrl = window.location.origin + window.location.pathname + "?item=" + item.id;
+                    
                     const shareData = {
-                        title: `Neu im Family-Bazar: ${item.name}`,
+                        title: `Family-Bazar: ${item.name}`,
                         text: text,
-                        url: window.location.href 
+                        url: shareUrl 
                     };
 
                     if (navigator.share) {
@@ -1443,7 +1470,7 @@
                                             <input type="checkbox" class="admin-cb w-5 h-5 mr-3 accent-green-600 pointer-events-auto shrink-0" data-id="${item.id}">
                                             ${thumb ? `<img src="${thumb}" class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover mr-3 sm:mr-4 shadow-sm border border-gray-200 shrink-0 ${isArchived ? 'grayscale opacity-70' : ''}">` : `<div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-green-50 mr-3 sm:mr-4 flex items-center justify-center text-green-300 shrink-0"><i class="fa-solid fa-box text-2xl"></i></div>`}
                                             <div class="truncate">
-                                                <p class="font-bold text-gray-800 text-sm sm:text-base truncate">${item.name} ${isArchived ? '<span class="text-[10px] sm:text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg ml-2 font-bold">Archiviert</span>' : ''}</p>
+                                                <p class="font-bold text-gray-800 text-sm sm:text-base truncate">${item.name}${isArchived ? '<span class="text-[10px] sm:text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg ml-2 font-bold">Archiviert</span>' : ''}</p>
                                                 <p class="text-[11px] sm:text-xs text-gray-500 mt-0.5 font-medium truncate">von ${item.sellerName || 'Unbekannt'}</p>
                                             </div>
                                         </div>
