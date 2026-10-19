@@ -31,6 +31,12 @@
 
     <div id="toast-container" class="fixed top-0 left-0 right-0 z-[100] p-4 flex flex-col gap-2 pointer-events-none"></div>
 
+    <!-- Lightbox für Bilder -->
+    <div id="lightbox-overlay" class="hidden fixed inset-0 bg-black/90 z-[110] flex items-center justify-center p-2 backdrop-blur-sm cursor-zoom-out" onclick="this.classList.add('hidden')">
+        <img id="lightbox-img" src="" class="max-w-full max-h-full object-contain pointer-events-none">
+        <button class="absolute top-4 right-4 text-white bg-black/50 w-10 h-10 rounded-full flex items-center justify-center text-xl pointer-events-none"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
     <div class="w-full max-w-7xl mx-auto bg-white min-h-screen shadow-lg relative flex flex-col">
         
         <header class="bg-green-700 text-white p-3 sm:p-4 sticky top-0 z-30 shadow-md flex justify-between items-center gap-2">
@@ -120,6 +126,14 @@
         let wizardData = {};
         
         let seenItems = JSON.parse(localStorage.getItem('fbSeenItems') || '[]');
+
+        // Hilfsfunktion für die Lightbox
+        window.openLightbox = (src) => {
+            const lbOverlay = document.getElementById('lightbox-overlay');
+            const lbImg = document.getElementById('lightbox-img');
+            lbImg.src = src;
+            lbOverlay.classList.remove('hidden');
+        };
 
         // PWA Setup & Service Worker
         function setupPWA() {
@@ -237,7 +251,6 @@
             renderCurrentView();
         });
 
-        // REPARIERT: showToast nimmt jetzt das Item-Objekt entgegen und öffnet es beim Klick!
         function showToast(title, message, imageSrc, targetItem = null) {
             const toast = document.createElement('div');
             toast.className = 'bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border-l-4 border-green-500 p-4 flex items-center gap-3 transform transition-all duration-500 -translate-y-full opacity-0 pointer-events-auto cursor-pointer max-w-sm mx-auto w-full';
@@ -393,7 +406,6 @@
                         const fullItem = { id: change.doc.id, ...data };
                         if (data.sellerName && data.sellerName.toLowerCase() !== currentUser.toLowerCase()) {
                             const thumb = (data.images && data.images.length > 0) ? data.images[0] : null;
-                            // REPARIERT: Reicht nun das fullItem-Objekt weiter, damit der Klick auf den Toast funktioniert!
                             showToast("Neuer Artikel! 🎉", `${data.sellerName} bietet jetzt "${data.name}" an.`, thumb, fullItem);
                         }
                     }
@@ -705,7 +717,7 @@
                         // Direkt in die Detail-Ansicht des neuen Artikels springen, damit man ihn teilen kann!
                         selectedItem = { id: newDocRef.id, name: wizardData.name.trim(), description: wizardData.description.trim(), category: wizardData.category, price: wizardData.price ? Number(wizardData.price) : null, sellerName: currentUser, images: wizardData.images, status: 'available' };
                         goTo('detail');
-                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf 'Familie informieren', um Bescheid zu sagen!" });
+                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf das Teilen-Symbol, um Bescheid zu sagen!" });
                     } catch (e) {
                         showModal({ title: "Fehler", message: e.message });
                         btnNext.disabled = false;
@@ -1058,7 +1070,7 @@
                         // Direkt zum Artikel navigieren, damit man sofort teilen kann
                         selectedItem = { id: newDocRef.id, ...dataObj };
                         goTo('detail');
-                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf 'Familie informieren', um Bescheid zu sagen!" });
+                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf das Teilen-Symbol, um Bescheid zu sagen!" });
                     }
                 } catch (error) {
                     showModal({ title: "Fehler", message: error.message });
@@ -1087,7 +1099,8 @@
                     <div id="image-carousel" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory h-full scroll-smooth">`;
                 
                 displayImages.forEach(img => {
-                    imagesHtml += `<div class="snap-center shrink-0 w-full h-full relative"><img src="${img}" class="w-full h-full object-contain sm:object-cover ${(isSold || isArchived) ? 'opacity-40 grayscale' : ''}" /></div>`;
+                    // Bilder sind nun anklickbar für die Lightbox
+                    imagesHtml += `<div class="snap-center shrink-0 w-full h-full relative cursor-zoom-in" onclick="openLightbox('${img}')"><img src="${img}" class="w-full h-full object-contain sm:object-cover ${(isSold || isArchived) ? 'opacity-40 grayscale' : ''}" /></div>`;
                 });
                 
                 imagesHtml += `</div>`;
@@ -1110,17 +1123,24 @@
                 imagesHtml = `<div class="relative w-full h-64 sm:h-96 bg-green-50 flex items-center justify-center text-green-200"><i class="fa-solid fa-image text-6xl"></i></div>`;
             }
 
-            let actionButtonsHtml = '';
+            // Buttons nebeneinander anordnen
+            let actionButtonsHtml = '<div class="flex gap-2 sm:gap-3">';
+            const shareBtnHtml = `<button id="btn-share" class="w-14 sm:w-16 bg-white border-2 border-green-600 text-green-700 rounded-xl flex items-center justify-center shadow-md hover:bg-green-50 transition text-xl shrink-0" title="Familie informieren (Teilen)"><i class="fa-solid fa-share-nodes"></i></button>`;
+
             if (!isArchived) {
                 if (!isSold) {
-                    actionButtonsHtml = `<button id="btn-buy" class="w-full bg-green-700 text-white font-bold rounded-xl py-4 shadow-md hover:bg-green-800 transition text-lg flex items-center justify-center gap-2"><i class="fa-solid fa-heart"></i> Das möchte ich!</button>`;
+                    actionButtonsHtml += `<button id="btn-buy" class="flex-1 bg-green-700 text-white font-bold rounded-xl py-3.5 sm:py-4 shadow-md hover:bg-green-800 transition text-lg flex items-center justify-center gap-2"><i class="fa-solid fa-heart"></i> Das möchte ich!</button>`;
                 } else if (isBuyer) {
-                    actionButtonsHtml = `<button id="btn-cancel-buy" class="w-full bg-orange-600 text-white font-bold rounded-xl py-4 shadow-md hover:bg-orange-700 transition text-base flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-left"></i> Meine Reservierung zurücknehmen</button>`;
+                    actionButtonsHtml += `<button id="btn-cancel-buy" class="flex-1 bg-orange-600 text-white font-bold rounded-xl py-3.5 sm:py-4 shadow-md hover:bg-orange-700 transition text-base flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-left"></i> Nee, doch nicht</button>`;
+                } else {
+                     actionButtonsHtml += `<div class="flex-1"></div>`; // Platzhalter, damit der Teilen Button rechts bleibt
                 }
+            } else {
+                actionButtonsHtml += `<div class="flex-1"></div>`; 
             }
-
-            // NEU: Der Teilen-Button für WhatsApp & Co!
-            const shareBtnHtml = `<button id="btn-share" class="mt-3 w-full bg-white border-2 border-green-600 text-green-700 font-bold rounded-xl py-3 shadow-sm hover:bg-green-50 transition text-base flex items-center justify-center gap-2"><i class="fa-solid fa-share-nodes"></i> Familie informieren (Teilen)</button>`;
+            
+            actionButtonsHtml += shareBtnHtml;
+            actionButtonsHtml += '</div>';
 
             detailContainer.innerHTML = `
                 <div class="relative w-full">
@@ -1131,12 +1151,9 @@
                 
                 <div class="px-5 pt-5 pb-1">
                     ${actionButtonsHtml}
-                    ${shareBtnHtml}
                 </div>
 
-                <div class="p-5 sm:p-8 pt-4">
-                    <button class="mb-5 text-green-700 font-bold text-sm flex items-center gap-1.5 hover:text-green-900 transition" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i> Zurück</button>
-
+                <div class="p-5 sm:p-8 pt-6">
                     <div class="flex justify-between items-start mb-4">
                         <h2 class="text-2xl sm:text-3xl font-bold text-green-900 leading-tight">${item.name}</h2>
                         <span class="text-2xl sm:text-3xl font-black text-green-700 whitespace-nowrap ml-4">${item.price ? item.price + ' €' : 'Gratis'}</span>
@@ -1173,7 +1190,6 @@
 
             mainContent.appendChild(detailContainer);
 
-            // Logik für den neuen Teilen Button
             const btnShare = document.getElementById('btn-share');
             if (btnShare) {
                 btnShare.onclick = async () => {
@@ -1182,7 +1198,7 @@
                     const shareData = {
                         title: `Neu im Family-Bazar: ${item.name}`,
                         text: text,
-                        url: window.location.href // Leitet die Leute zur App
+                        url: window.location.href 
                     };
 
                     if (navigator.share) {
@@ -1192,7 +1208,6 @@
                             console.log('Teilen abgebrochen', err);
                         }
                     } else {
-                        // Fallback für Browser, die das Teilen-Menü nicht unterstützen (z.B. alte Desktop-Browser)
                         navigator.clipboard.writeText(`${text} \n${shareData.url}`);
                         showToast("Kopiert!", "Der Text wurde in die Zwischenablage kopiert. Du kannst ihn jetzt in WhatsApp einfügen.", null);
                     }
@@ -1389,3 +1404,4 @@
     </script>
 </body>
 </html>
+```eof
