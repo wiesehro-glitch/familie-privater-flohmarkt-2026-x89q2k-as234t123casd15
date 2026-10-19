@@ -195,10 +195,10 @@
             const touchEndX = e.changedTouches[0].screenX;
             const diff = lbTouchStartX - touchEndX;
             if (Math.abs(diff) > 50) {
-                if (diff > 0) window.lbNext(); // Wisch nach links = nächstes
-                else window.lbPrev(); // Wisch nach rechts = vorheriges
+                if (diff > 0) window.lbNext(); 
+                else window.lbPrev(); 
             } else if (e.target.id === 'lightbox-overlay') {
-                lbOverlay.classList.add('hidden'); // Klick daneben = schließen
+                lbOverlay.classList.add('hidden'); 
             }
         });
         // --- Ende Lightbox Logik ---
@@ -248,11 +248,16 @@
 
         function initSession() {
             const urlParams = new URLSearchParams(window.location.search);
+            const cleanUrl = window.location.href.split('?')[0];
+
             if (urlParams.get('item')) {
                 currentView = 'detail';
-                history.replaceState({ view: 'detail' }, '');
+                // 1. Unterschiebe die Home-Seite als ersten Eintrag, damit "Zurück" zur Startseite führt!
+                history.replaceState({ view: 'home' }, '', cleanUrl);
+                // 2. Lege die Detailseite "oben drauf"
+                history.pushState({ view: 'detail' }, '', cleanUrl);
             } else {
-                history.replaceState({ view: 'home' }, '');
+                history.replaceState({ view: 'home' }, '', cleanUrl);
             }
         }
         initSession();
@@ -303,7 +308,6 @@
             currentView = view;
             history.pushState({ view: view }, '');
             
-            // Wenn man das Dashboard oder Menü verlässt, Auswahl löschen
             if (view !== 'home') homeAdminSelected.clear(); 
             
             renderCurrentView();
@@ -503,10 +507,11 @@
                         if (target) {
                             selectedItem = target;
                             currentView = 'detail';
-                            window.history.replaceState({ view: 'detail' }, '', window.location.href.split('?')[0]);
+                            // Die URL wurde bereits bereinigt und in der History hinterlegt!
                         } else {
+                            // Link ungültig/gelöscht -> Gehe still zur Startseite
                             currentView = 'home';
-                            window.history.replaceState({ view: 'home' }, '', window.location.href.split('?')[0]);
+                            history.replaceState({ view: 'home' }, '', window.location.href.split('?')[0]);
                         }
                     }
                 } else if (currentView === 'detail' && selectedItem) {
@@ -1006,7 +1011,7 @@
             mainContent.appendChild(topBar);
 
             const container = document.createElement('div');
-            container.className = 'p-4 sm:p-6 fade-in pb-24'; // Mehr padding bottom wegen Bulk Bar
+            container.className = 'p-4 sm:p-6 fade-in pb-24'; 
 
             let filteredItems = items.filter(item => {
                 const isNotArchived = item.status !== 'archived';
@@ -1085,7 +1090,6 @@
 
             mainContent.appendChild(container);
 
-            // Multiselect Action Bar für Home (wenn Admin)
             if (isAdmin && filteredItems.length > 0) {
                 const actionBar = document.createElement('div');
                 actionBar.id = 'home-bulk-bar';
@@ -1405,7 +1409,6 @@
 
             mainContent.appendChild(detailContainer);
 
-            // Lightbox klick aktivieren
             detailContainer.querySelectorAll('.lb-trigger').forEach(trigger => {
                 trigger.onclick = () => window.openLightbox(displayImages, parseInt(trigger.dataset.idx));
             });
