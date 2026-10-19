@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Family-Bazar</title>
     
+    <!-- PWA Meta Tags & Icons -->
+    <meta name="theme-color" content="#15803d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="logo.png">
+    
+    <!-- Inline Manifest for Single File App (Base64 Encoded JSON) -->
+    <!-- Content: {"name":"Family-Bazar","short_name":"FamBazar","start_url":"./","display":"standalone","background_color":"#f0fdf4","theme_color":"#15803d","icons":[{"src":"logo.png","sizes":"192x192","type":"image/png","purpose":"maskable any"},{"src":"logo.png","sizes":"512x512","type":"image/png","purpose":"maskable any"}]} -->
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiRmFtaWx5LUJhemFyIiwic2hvcnRfbmFtZSI6IkZhbUJhemFyIiwic3RhcnRfdXJsIjoiLi8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjZjBmZGY0IiwidGhlbWVfY29sb3IiOiIjMTU4MDNkIiwiaWNvbnMiOlt7InNyYyI6ImxvZ28ucG5nIiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJtYXNrYWJsZSBhbnkifSx7InNyYyI6ImxvZ28ucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJtYXNrYWJsZSBhbnkifV19">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -39,6 +49,9 @@
                         <i class="fa-solid fa-chevron-down text-[10px] ml-0.5 opacity-80"></i>
                     </div>
                     <div id="user-dropdown" class="hidden absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-green-100 py-2 z-50 text-gray-800">
+                        <button id="dropdown-install-app" class="hidden w-full text-left px-4 py-2.5 text-sm hover:bg-green-50 flex items-center gap-2.5 font-bold text-green-700 border-b border-gray-100">
+                            <i class="fa-solid fa-download w-4 text-center"></i> App installieren
+                        </button>
                         <button id="dropdown-change-user" class="w-full text-left px-4 py-2.5 text-sm hover:bg-green-50 flex items-center gap-2.5">
                             <i class="fa-solid fa-user-pen w-4 text-green-700 text-center"></i> Benutzer wechseln
                         </button>
@@ -108,6 +121,53 @@
         let wizardData = {};
         let neuFuerDichTimestamp = 0;
 
+        // PWA Setup
+        function setupPWA() {
+            // Inline Service Worker for Single File Architecture
+            const swCode = `
+                self.addEventListener('install', (event) => self.skipWaiting());
+                self.addEventListener('activate', (event) => event.waitUntil(clients.claim()));
+                self.addEventListener('fetch', (event) => {
+                    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+                });
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed: ', err));
+                });
+            }
+
+            // Install Prompt Logic
+            let deferredPrompt;
+            const installBtn = document.getElementById('dropdown-install-app');
+            
+            window.addEventListener('beforeinstallprompt', (e) => {
+                // Prevent the mini-infobar from appearing on mobile
+                e.preventDefault();
+                deferredPrompt = e;
+                // Update UI notify the user they can install the PWA
+                if (installBtn) installBtn.classList.remove('hidden');
+            });
+
+            if (installBtn) {
+                installBtn.addEventListener('click', async () => {
+                    userDropdown.classList.add('hidden');
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        if (outcome === 'accepted') {
+                            installBtn.classList.add('hidden');
+                        }
+                        deferredPrompt = null;
+                    }
+                });
+            }
+        }
+        setupPWA();
+
         function initSession() {
             const now = Date.now();
             let lastVisit = localStorage.getItem('fbLastVisit');
@@ -123,7 +183,6 @@
             }
             neuFuerDichTimestamp = parseInt(lastVisit);
             
-            // Set initial state without changing URL
             history.replaceState({ view: 'home' }, '');
         }
         initSession();
@@ -169,27 +228,19 @@
         }
         updateHeaderUser();
 
-        // -----------------------------------------------------------
-        // SICHERE NAVIGATION OHNE URL/HASH ZU ÄNDERN (Google Sites Fix)
-        // -----------------------------------------------------------
         function goTo(view) {
             if (currentView === view) return;
             currentView = view;
-            // Fügt einen unsichtbaren Eintrag in den Verlauf ein.
-            // URL bleibt unverändert, Google Sites Iframe lädt nicht neu.
             history.pushState({ view: view }, '');
             renderCurrentView();
         }
 
         function goBack() {
             if (currentView !== 'home') {
-                // Wenn wir nicht auf der Startseite sind, nutzen wir den Browser-Verlauf.
-                // Das löst das 'popstate' Event unten aus.
                 window.history.back();
             }
         }
 
-        // Fängt die Zurück-Geste am Handy oder den Zurück-Button im Browser ab
         window.addEventListener('popstate', (e) => {
             if (e.state && e.state.view) {
                 currentView = e.state.view;
@@ -197,15 +248,12 @@
                 currentView = 'home';
             }
 
-            // Sicherheitscheck: Falls man ohne ausgewähltes Item in die Detailansicht zurückwischt
             if ((currentView === 'detail' || currentView === 'edit') && !selectedItem) {
                 currentView = 'home';
                 history.replaceState({ view: 'home' }, '');
             }
             renderCurrentView();
         });
-        // -----------------------------------------------------------
-
 
         function showNotification(title, body, iconUrl) {
             if ('Notification' in window && Notification.permission === 'granted') {
@@ -442,7 +490,6 @@
         });
 
         function renderCurrentView() {
-            // FIX 1: Stelle sicher, dass die neue Ansicht IMMER oben anfängt
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             if (mainContent) mainContent.scrollTop = 0;
 
@@ -1059,7 +1106,6 @@
                 imagesHtml = `<div class="relative w-full h-64 sm:h-96 bg-green-50 flex items-center justify-center text-green-200"><i class="fa-solid fa-image text-6xl"></i></div>`;
             }
 
-            // FIX 2: Kaufen-Button direkt ins HTML einbauen, sodass er unter dem Bild sitzt
             let actionButtonsHtml = '';
             if (!isArchived) {
                 if (!isSold) {
@@ -1278,7 +1324,7 @@
                                         <div class="flex items-center pointer-events-none">
                                             ${thumb ? `<img src="${thumb}" class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover mr-4 shadow-sm border-2 border-white ${isArchived ? 'grayscale opacity-70' : ''}">` : `<div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-green-50 mr-4 flex items-center justify-center text-green-300"><i class="fa-solid fa-box text-2xl"></i></div>`}
                                             <div>
-                                                <p class="font-bold text-gray-800 text-base sm:text-lg">${item.name} ${isArchived ? '<span class="text-[10px] sm:text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg ml-2 font-bold">Archiviert</span>' : ''}</p>
+                                                <p class="font-bold text-gray-800 text-base sm:text-lg">${item.name}${isArchived ? '<span class="text-[10px] sm:text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg ml-2 font-bold">Archiviert</span>' : ''}</p>
                                                 <p class="text-xs sm:text-sm text-gray-500 mt-1 font-medium">von ${item.sellerName || 'Unbekannt'}</p>
                                             </div>
                                         </div>
