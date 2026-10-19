@@ -31,7 +31,7 @@
 
     <div id="toast-container" class="fixed top-0 left-0 right-0 z-[100] p-4 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Neue Lightbox mit Wisch-Funktion -->
+    <!-- Lightbox mit Wisch-Funktion -->
     <div id="lightbox-overlay" class="hidden fixed inset-0 bg-black/95 z-[110] flex flex-col items-center justify-center touch-none backdrop-blur-sm">
         <div class="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-50 bg-gradient-to-b from-black/60 to-transparent">
             <div id="lb-counter" class="text-white font-bold text-sm tracking-widest bg-black/50 px-3 py-1 rounded-full shadow-md">1 / 3</div>
@@ -116,6 +116,10 @@
         const db = getFirestore(app);
         const collPath = "angebote";
 
+        // WICHTIG: Wir lesen die URL direkt am Start aus, BEVOR sie bereinigt wird!
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialItemId = urlParams.get('item');
+
         let items = [];
         let currentFilter = 'Alle';
         let currentSearch = '';
@@ -132,9 +136,6 @@
         let wizardData = {};
         
         let seenItems = JSON.parse(localStorage.getItem('fbSeenItems') || '[]');
-
-        // FIX: Wir merken uns die gesuchte Artikel-ID BEVOR die URL aufgeräumt wird
-        const initialItemId = new URLSearchParams(window.location.search).get('item');
 
         // --- Lightbox Logik mit Wischen ---
         let lbImages = [];
@@ -250,17 +251,9 @@
         setupPWA();
 
         function initSession() {
+            // Hier wird NUR die Startseite in den Verlauf gelegt und die URL optisch bereinigt.
             const cleanUrl = window.location.href.split('?')[0];
-
-            if (initialItemId) {
-                currentView = 'detail';
-                // 1. Unterschiebe die Home-Seite als ersten Eintrag, damit "Zurück" zur Startseite führt!
-                history.replaceState({ view: 'home' }, '', cleanUrl);
-                // 2. Lege die Detailseite "oben drauf"
-                history.pushState({ view: 'detail' }, '', cleanUrl);
-            } else {
-                history.replaceState({ view: 'home' }, '', cleanUrl);
-            }
+            history.replaceState({ view: 'home' }, '', cleanUrl);
         }
         initSession();
 
@@ -502,19 +495,19 @@
                 snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
                 
                 if (isFirstLoad) {
-                    // Verwende die ID, die wir VOR dem Aufräumen der URL gerettet haben
                     if (initialItemId) {
                         const target = items.find(i => i.id === initialItemId);
                         if (target) {
                             selectedItem = target;
                             currentView = 'detail';
+                            
+                            // JETZT simulieren wir einen Klick, NACHDEM die Startseite die Basis ist
+                            history.pushState({ view: 'detail' }, '');
+
                             if (!seenItems.includes(target.id)) {
                                 seenItems.push(target.id);
                                 localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
                             }
-                        } else {
-                            currentView = 'home';
-                            history.replaceState({ view: 'home' }, '', window.location.href.split('?')[0]);
                         }
                     }
                 } else if (currentView === 'detail' && selectedItem) {
