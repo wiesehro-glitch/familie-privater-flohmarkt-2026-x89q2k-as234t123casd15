@@ -119,33 +119,15 @@
         let wizardStep = 1;
         let wizardData = {};
         
-        // Neues System: Gesehene Artikel präzise speichern
         let seenItems = JSON.parse(localStorage.getItem('fbSeenItems') || '[]');
 
         // PWA Setup & Service Worker
         function setupPWA() {
-            // Service Worker mit Benachrichtigungs-Klick-Event
             const swCode = `
                 self.addEventListener('install', (event) => self.skipWaiting());
                 self.addEventListener('activate', (event) => event.waitUntil(clients.claim()));
                 self.addEventListener('fetch', (event) => {
                     event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
-                });
-                self.addEventListener('notificationclick', (event) => {
-                    event.notification.close();
-                    event.waitUntil(
-                        clients.matchAll({ type: 'window' }).then(windowClients => {
-                            for (let i = 0; i < windowClients.length; i++) {
-                                let client = windowClients[i];
-                                if (client.url.indexOf(self.registration.scope) !== -1 && 'focus' in client) {
-                                    return client.focus();
-                                }
-                            }
-                            if (clients.openWindow) {
-                                return clients.openWindow(self.registration.scope);
-                            }
-                        })
-                    );
                 });
             `;
             const blob = new Blob([swCode], { type: 'application/javascript' });
@@ -255,25 +237,8 @@
             renderCurrentView();
         });
 
-        // Optimierte Benachrichtigungen für PWAs über den Service Worker
-        function showNotification(title, body, iconUrl) {
-            if ('serviceWorker' in navigator && Notification.permission === 'granted') {
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.showNotification(title, {
-                        body: body,
-                        icon: iconUrl || 'logo.png',
-                        badge: 'logo.png',
-                        vibrate: [200, 100, 200]
-                    });
-                });
-            } else if ('Notification' in window && Notification.permission === 'granted') {
-                // Fallback für Desktop
-                const notification = new Notification(title, { body: body, icon: iconUrl || 'logo.png' });
-                notification.onclick = function() { window.focus(); goTo('home'); this.close(); };
-            }
-        }
-
-        function showToast(title, message, imageSrc) {
+        // REPARIERT: showToast nimmt jetzt das Item-Objekt entgegen und öffnet es beim Klick!
+        function showToast(title, message, imageSrc, targetItem = null) {
             const toast = document.createElement('div');
             toast.className = 'bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border-l-4 border-green-500 p-4 flex items-center gap-3 transform transition-all duration-500 -translate-y-full opacity-0 pointer-events-auto cursor-pointer max-w-sm mx-auto w-full';
             
@@ -285,7 +250,20 @@
                 </div>
             `;
 
-            toast.onclick = () => { toast.remove(); goTo('home'); };
+            toast.onclick = () => { 
+                toast.remove(); 
+                if (targetItem) {
+                    selectedItem = targetItem;
+                    if (!seenItems.includes(targetItem.id)) {
+                        seenItems.push(targetItem.id);
+                        localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
+                    }
+                    goTo('detail');
+                } else {
+                    goTo('home');
+                }
+            };
+
             document.getElementById('toast-container').appendChild(toast);
             requestAnimationFrame(() => {
                 toast.classList.remove('-translate-y-full', 'opacity-0');
@@ -335,17 +313,8 @@
             });
         }
 
-        function requestNotificationPermission() {
-            if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if(permission === 'granted') console.log('Web-Benachrichtigungen aktiviert!');
-                });
-            }
-        }
-
         async function requireUser() {
             if (currentUser) {
-                requestNotificationPermission(); 
                 return true;
             }
             const name = await showModal({ 
@@ -359,7 +328,6 @@
                 currentUser = name;
                 localStorage.setItem('familyBazarUser', currentUser);
                 updateHeaderUser();
-                requestNotificationPermission(); 
                 return true;
             }
             return false;
@@ -378,7 +346,6 @@
                 currentUser = name || '';
                 if(currentUser) {
                     localStorage.setItem('familyBazarUser', currentUser);
-                    requestNotificationPermission();
                 } else {
                     localStorage.removeItem('familyBazarUser');
                 }
@@ -423,13 +390,11 @@
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === "added" && initialDataLoaded) {
                         const data = change.doc.data();
+                        const fullItem = { id: change.doc.id, ...data };
                         if (data.sellerName && data.sellerName.toLowerCase() !== currentUser.toLowerCase()) {
                             const thumb = (data.images && data.images.length > 0) ? data.images[0] : null;
-                            if (document.hidden) {
-                                showNotification("Neuer Artikel! 🎉", `${data.sellerName} bietet jetzt "${data.name}" an.`, thumb);
-                            } else {
-                                showToast("Neuer Artikel! 🎉", `${data.sellerName} bietet jetzt "${data.name}" an.`, thumb);
-                            }
+                            // REPARIERT: Reicht nun das fullItem-Objekt weiter, damit der Klick auf den Toast funktioniert!
+                            showToast("Neuer Artikel! 🎉", `${data.sellerName} bietet jetzt "${data.name}" an.`, thumb, fullItem);
                         }
                     }
                 });
@@ -577,7 +542,6 @@
             document.getElementById('btn-back-admin').onclick = () => { goBack(); };
         }
 
-        // ... [Wizard Code bleibt unverändert] ...
         function renderWizard() {
             const formContainer = document.createElement('div');
             formContainer.className = 'p-5 sm:p-8 fade-in w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl my-6 border border-green-50 flex flex-col relative pb-24';
@@ -734,12 +698,14 @@
                             buyerName: null,
                             timestamp: Date.now()
                         });
-                        // Eigenen Artikel direkt als gelesen markieren
+                        
                         seenItems.push(newDocRef.id);
                         localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
                         
-                        goTo('home');
-                        showModal({ title: "Super!", message: "Dein Artikel ist online." });
+                        // Direkt in die Detail-Ansicht des neuen Artikels springen, damit man ihn teilen kann!
+                        selectedItem = { id: newDocRef.id, name: wizardData.name.trim(), description: wizardData.description.trim(), category: wizardData.category, price: wizardData.price ? Number(wizardData.price) : null, sellerName: currentUser, images: wizardData.images, status: 'available' };
+                        goTo('detail');
+                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf 'Familie informieren', um Bescheid zu sagen!" });
                     } catch (e) {
                         showModal({ title: "Fehler", message: e.message });
                         btnNext.disabled = false;
@@ -770,12 +736,10 @@
             const card = document.createElement('div');
             card.className = 'bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden cursor-pointer transform transition hover:-translate-y-1 hover:shadow-md flex flex-col relative';
             
-            // Neuer Indikator
             const isNew = !seenItems.includes(item.id) && item.sellerName !== currentUser;
 
             card.onclick = () => { 
                 selectedItem = item; 
-                // Als gesehen markieren, wenn angeklickt
                 if (isNew) {
                     seenItems.push(item.id);
                     localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
@@ -838,7 +802,6 @@
             const catScroll = document.createElement('div');
             catScroll.className = 'flex overflow-x-auto hide-scroll gap-2 pb-1 max-w-4xl mx-auto';
             
-            // Check wie viele neu sind für den Badge
             const countNew = items.filter(i => !seenItems.includes(i.id) && i.sellerName !== currentUser && i.status !== 'archived').length;
 
             categories.forEach(cat => {
@@ -867,7 +830,6 @@
                 let matchCat = false;
                 
                 if (currentFilter === 'Alle') matchCat = true;
-                // Neue Logik für 'Neu für Dich' - Zeigt nur noch wirklich ungesehene!
                 else if (currentFilter === 'Neu für Dich') matchCat = !seenItems.includes(item.id) && (item.sellerName !== currentUser);
                 else matchCat = item.category === currentFilter;
 
@@ -896,8 +858,6 @@
                     container.innerHTML = `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-box-open text-6xl mb-4"></i><p class="font-bold text-lg">Keine Artikel gefunden.</p></div>`;
                 }
             } else {
-                
-                // Button zum "Alle als gelesen" markieren
                 if (currentFilter === 'Neu für Dich') {
                     const markAllContainer = document.createElement('div');
                     markAllContainer.className = 'mb-6 flex justify-end';
@@ -962,7 +922,6 @@
             });
         }
 
-        // ... [Der restliche Code (renderAddForm, renderItemDetail, renderAdmin) bleibt völlig unverändert] ...
         function renderAddForm(editItem = null) {
             const formContainer = document.createElement('div');
             formContainer.className = 'p-5 sm:p-8 fade-in w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl my-6 border border-green-50';
@@ -1086,17 +1045,21 @@
                     if (editItem) {
                         await updateDoc(doc(db, collPath, editItem.id), dataObj);
                         selectedItem = { ...editItem, ...dataObj };
+                        goBack();
                     } else {
                         dataObj.sellerName = currentUser;
                         dataObj.status = 'available';
                         dataObj.buyerName = null;
                         dataObj.timestamp = Date.now();
                         const newDocRef = await addDoc(collection(db, collPath), dataObj);
-                        // Eigene erstellte Artikel direkt als gelesen markieren
                         seenItems.push(newDocRef.id);
                         localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
+                        
+                        // Direkt zum Artikel navigieren, damit man sofort teilen kann
+                        selectedItem = { id: newDocRef.id, ...dataObj };
+                        goTo('detail');
+                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf 'Familie informieren', um Bescheid zu sagen!" });
                     }
-                    goBack(); 
                 } catch (error) {
                     showModal({ title: "Fehler", message: error.message });
                     btnSave.disabled = false;
@@ -1156,6 +1119,9 @@
                 }
             }
 
+            // NEU: Der Teilen-Button für WhatsApp & Co!
+            const shareBtnHtml = `<button id="btn-share" class="mt-3 w-full bg-white border-2 border-green-600 text-green-700 font-bold rounded-xl py-3 shadow-sm hover:bg-green-50 transition text-base flex items-center justify-center gap-2"><i class="fa-solid fa-share-nodes"></i> Familie informieren (Teilen)</button>`;
+
             detailContainer.innerHTML = `
                 <div class="relative w-full">
                     ${imagesHtml}
@@ -1165,6 +1131,7 @@
                 
                 <div class="px-5 pt-5 pb-1">
                     ${actionButtonsHtml}
+                    ${shareBtnHtml}
                 </div>
 
                 <div class="p-5 sm:p-8 pt-4">
@@ -1205,6 +1172,32 @@
             `;
 
             mainContent.appendChild(detailContainer);
+
+            // Logik für den neuen Teilen Button
+            const btnShare = document.getElementById('btn-share');
+            if (btnShare) {
+                btnShare.onclick = async () => {
+                    const priceText = item.price ? item.price + ' €' : 'Gratis';
+                    const text = `Hey, ich habe gerade "${item.name}" für ${priceText} in den Family-Bazar gestellt! Schau mal rein.`;
+                    const shareData = {
+                        title: `Neu im Family-Bazar: ${item.name}`,
+                        text: text,
+                        url: window.location.href // Leitet die Leute zur App
+                    };
+
+                    if (navigator.share) {
+                        try {
+                            await navigator.share(shareData);
+                        } catch (err) {
+                            console.log('Teilen abgebrochen', err);
+                        }
+                    } else {
+                        // Fallback für Browser, die das Teilen-Menü nicht unterstützen (z.B. alte Desktop-Browser)
+                        navigator.clipboard.writeText(`${text} \n${shareData.url}`);
+                        showToast("Kopiert!", "Der Text wurde in die Zwischenablage kopiert. Du kannst ihn jetzt in WhatsApp einfügen.", null);
+                    }
+                };
+            }
 
             if (displayImages.length > 1) {
                 const carousel = document.getElementById('image-carousel');
