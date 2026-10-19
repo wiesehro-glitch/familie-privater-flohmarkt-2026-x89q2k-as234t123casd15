@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Family-Bazar</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body, html { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; width: 100%; height: 100%; margin: 0; padding: 0; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .snap-x { scroll-snap-type: x mandatory; }
+        .snap-center { scroll-snap-align: center; }
+    </style>
+</head>
+<body class="bg-green-50 text-gray-800">
+
+    <div id="toast-container" class="fixed top-0 left-0 right-0 z-[100] p-4 flex flex-col gap-2 pointer-events-none"></div>
+
+    <div class="w-full max-w-7xl mx-auto bg-white min-h-screen shadow-lg relative flex flex-col">
+        
+        <header class="bg-green-700 text-white p-3 sm:p-4 sticky top-0 z-30 shadow-md flex justify-between items-center gap-2">
+            <div id="header-logo" class="font-bold text-lg sm:text-xl cursor-pointer select-none flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                <i class="fa-solid fa-store"></i> Family-Bazar
+            </div>
+            <div class="flex items-center shrink-0 gap-2">
+                <button id="btn-admin-view" class="hidden text-green-200 hover:text-white transition" title="Admin Dashboard">
+                    <i class="fa-solid fa-crown text-lg"></i>
+                </button>
+                
+                <div class="relative">
+                    <div id="btn-user-profile" class="text-xs sm:text-sm font-bold bg-green-800 px-3 py-1.5 rounded-full cursor-pointer hover:bg-green-900 transition flex items-center gap-1.5 border border-green-600 shadow-inner whitespace-nowrap" title="Menü">
+                        <i class="fa-solid fa-user-circle text-base sm:text-lg"></i> <span id="header-user-name" class="max-w-[70px] sm:max-w-[100px] truncate">Gast</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] ml-0.5 opacity-80"></i>
+                    </div>
+                    <div id="user-dropdown" class="hidden absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-green-100 py-2 z-50 text-gray-800">
+                        <button id="dropdown-change-user" class="w-full text-left px-4 py-2.5 text-sm hover:bg-green-50 flex items-center gap-2.5">
+                            <i class="fa-solid fa-user-pen w-4 text-green-700 text-center"></i> Benutzer wechseln
+                        </button>
+                        <button id="dropdown-my-archive" class="w-full text-left px-4 py-2.5 text-sm hover:bg-green-50 flex items-center gap-2.5 border-t border-gray-100">
+                            <i class="fa-solid fa-box-archive w-4 text-green-700 text-center"></i> Mein Archiv
+                        </button>
+                    </div>
+                </div>
+
+                <button id="btn-show-wizard" class="bg-white text-green-700 w-8 h-8 sm:w-10 sm:h-10 rounded-full shadow hover:bg-green-50 transition flex items-center justify-center shrink-0" title="Assistent">
+                    <i class="fa-solid fa-wand-magic-sparkles text-sm sm:text-base"></i>
+                </button>
+                <button id="btn-show-add" class="bg-white text-green-700 w-8 h-8 sm:w-10 sm:h-10 rounded-full shadow hover:bg-green-50 transition flex items-center justify-center shrink-0" title="Neu/Zurück">
+                    <i class="fa-solid fa-plus text-sm sm:text-base"></i>
+                </button>
+            </div>
+        </header>
+
+        <main id="main-content" class="flex-1 overflow-y-auto pb-20 relative bg-green-50/30">
+            <!-- Dynamischer Inhalt -->
+        </main>
+
+    </div>
+
+    <div id="modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+        <form id="modal-form" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all">
+            <h3 id="modal-title" class="text-xl font-bold mb-2 text-green-900"></h3>
+            <p id="modal-message" class="text-gray-600 mb-5 text-sm leading-relaxed"></p>
+            <input id="modal-input" type="text" autocomplete="given-name" class="hidden w-full border-2 border-green-100 rounded-xl p-3 mb-4 focus:ring-2 focus:ring-green-600 outline-none transition bg-green-50">
+            <div class="flex justify-end gap-3 mt-2">
+                <button type="button" id="modal-cancel" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-xl font-medium transition text-sm">Abbrechen</button>
+                <button type="submit" id="modal-confirm" class="px-5 py-2 bg-green-700 text-white rounded-xl hover:bg-green-800 font-medium shadow-md transition text-sm">OK</button>
+            </div>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBFHVLSKY0i2clWQULO6pCyGyfDLeitSAk",
+            authDomain: "troedelmarkt-d6b23.firebaseapp.com",
+            projectId: "troedelmarkt-d6b23",
+            storageBucket: "troedelmarkt-d6b23.firebasestorage.app",
+            messagingSenderId: "355476141503",
+            appId: "1:355476141503:web:6b788352b9ad80f4e05d0a",
+            measurementId: "G-648CGEP9E3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const collPath = "angebote";
+
+        let items = [];
+        let currentFilter = 'Alle';
+        let currentSearch = '';
+        let currentSort = 'date-desc';
+        
+        let currentView = 'home';
+        let isAdmin = false;
+        let selectedItem = null;
+        let initialDataLoaded = false;
+        
+        let currentUser = localStorage.getItem('familyBazarUser') || '';
+        let wizardStep = 1;
+        let wizardData = {};
+        let neuFuerDichTimestamp = 0;
+
+        function initSession() {
+            const now = Date.now();
+            let lastVisit = localStorage.getItem('fbLastVisit');
+            let currentVisit = localStorage.getItem('fbCurrentVisit');
+
+            if (!currentVisit || (now - parseInt(currentVisit)) > 30 * 60 * 1000) {
+                lastVisit = currentVisit || (now - 24 * 60 * 60 * 1000).toString();
+                localStorage.setItem('fbLastVisit', lastVisit);
+                currentVisit = now.toString();
+                localStorage.setItem('fbCurrentVisit', currentVisit);
+            } else {
+                localStorage.setItem('fbCurrentVisit', now.toString());
+            }
+            neuFuerDichTimestamp = parseInt(lastVisit);
+            
+            // Set initial state without changing URL
+            history.replaceState({ view: 'home' }, '');
+        }
+        initSession();
+
+        const baseCategories = ['Bücher', 'Deko', 'Elektronik', 'Haushalt', 'Kleidung', 'Möbel', 'Sonstiges', 'Spielzeug'].sort();
+        const categories = ['Alle', 'Neu für Dich', ...baseCategories];
+
+        const mainContent = document.getElementById('main-content');
+        const btnShowAdd = document.getElementById('btn-show-add');
+        const btnShowWizard = document.getElementById('btn-show-wizard');
+        const logo = document.getElementById('header-logo');
+        const btnAdminView = document.getElementById('btn-admin-view');
+        
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalForm = document.getElementById('modal-form');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalInput = document.getElementById('modal-input');
+        const modalCancel = document.getElementById('modal-cancel');
+        const btnUserProfile = document.getElementById('btn-user-profile');
+        const userDropdown = document.getElementById('user-dropdown');
+        
+        btnUserProfile.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('hidden');
+        });
+        document.addEventListener('click', () => { userDropdown.classList.add('hidden'); });
+
+        document.getElementById('dropdown-change-user').addEventListener('click', async () => {
+            userDropdown.classList.add('hidden');
+            await promptChangeUser();
+        });
+
+        document.getElementById('dropdown-my-archive').addEventListener('click', async () => {
+            userDropdown.classList.add('hidden');
+            if (await requireUser()) {
+                goTo('archive');
+            }
+        });
+
+        function updateHeaderUser() {
+            document.getElementById('header-user-name').textContent = currentUser ? currentUser : 'Gast';
+        }
+        updateHeaderUser();
+
+        // -----------------------------------------------------------
+        // SICHERE NAVIGATION OHNE URL/HASH ZU ÄNDERN (Google Sites Fix)
+        // -----------------------------------------------------------
+        function goTo(view) {
+            if (currentView === view) return;
+            currentView = view;
+            // Fügt einen unsichtbaren Eintrag in den Verlauf ein.
+            // URL bleibt unverändert, Google Sites Iframe lädt nicht neu.
+            history.pushState({ view: view }, '');
+            renderCurrentView();
+        }
+
+        function goBack() {
+            if (currentView !== 'home') {
+                // Wenn wir nicht auf der Startseite sind, nutzen wir den Browser-Verlauf.
+                // Das löst das 'popstate' Event unten aus.
+                window.history.back();
+            }
+        }
+
+        // Fängt die Zurück-Geste am Handy oder den Zurück-Button im Browser ab
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.view) {
+                currentView = e.state.view;
+            } else {
+                currentView = 'home';
+            }
+
+            // Sicherheitscheck: Falls man ohne ausgewähltes Item in die Detailansicht zurückwischt
+            if ((currentView === 'detail' || currentView === 'edit') && !selectedItem) {
+                currentView = 'home';
+                history.replaceState({ view: 'home' }, '');
+            }
+            renderCurrentView();
+        });
+        // -----------------------------------------------------------
+
+
+        function showNotification(title, body, iconUrl) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                    const notification = new Notification(title, {
+                        body: body,
+                        icon: iconUrl || 'https://placehold.co/200x200/15803d/ffffff?text=Neu',
+                        badge: 'https://placehold.co/100x100/15803d/ffffff?text=Bazar',
+                        vibrate: [200, 100, 200]
+                    });
+                    notification.onclick = function() {
+                        window.focus();
+                        goTo('home');
+                        this.close();
+                    };
+                } catch (e) {
+                    console.warn("Browser blockiert Notification.", e);
+                }
+            }
+        }
+
+        function showToast(title, message, imageSrc) {
+            const toast = document.createElement('div');
+            toast.className = 'bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border-l-4 border-green-500 p-4 flex items-center gap-3 transform transition-all duration-500 -translate-y-full opacity-0 pointer-events-auto cursor-pointer max-w-sm mx-auto w-full';
+            
+            toast.innerHTML = `
+                ${imageSrc ? `<img src="${imageSrc}" class="w-12 h-12 rounded-xl object-cover shadow-sm">` : `<div class="w-12 h-12 rounded-xl bg-green-100 text-green-500 flex items-center justify-center text-xl"><i class="fa-solid fa-gift"></i></div>`}
+                <div class="flex-1">
+                    <h4 class="font-bold text-green-900 text-sm mb-0.5">${title}</h4>
+                    <p class="text-xs text-gray-700 leading-snug">${message}</p>
+                </div>
+            `;
+
+            toast.onclick = () => { toast.remove(); goTo('home'); };
+            document.getElementById('toast-container').appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('-translate-y-full', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            });
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('-translate-y-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 6000);
+        }
+
+        function showModal(options) {
+            return new Promise((resolve) => {
+                modalTitle.textContent = options.title || 'Hinweis';
+                modalMessage.textContent = options.message || '';
+                
+                if (options.inputType) {
+                    modalInput.classList.remove('hidden');
+                    modalInput.type = options.inputType;
+                    modalInput.placeholder = options.placeholder || '';
+                    modalInput.value = options.defaultValue || '';
+                    modalInput.setAttribute('autocomplete', options.autocomplete || 'off');
+                } else {
+                    modalInput.classList.add('hidden');
+                }
+
+                modalOverlay.classList.remove('hidden');
+                setTimeout(() => { if(options.inputType) modalInput.focus(); }, 100);
+
+                const handleCancel = () => { cleanup(); resolve(null); };
+                const handleConfirm = (e) => {
+                    if (e) e.preventDefault(); 
+                    const val = options.inputType ? modalInput.value.trim() : true;
+                    cleanup();
+                    resolve(val);
+                };
+
+                const cleanup = () => {
+                    modalOverlay.classList.add('hidden');
+                    modalCancel.removeEventListener('click', handleCancel);
+                    modalForm.removeEventListener('submit', handleConfirm);
+                };
+
+                modalCancel.addEventListener('click', handleCancel);
+                modalForm.addEventListener('submit', handleConfirm);
+            });
+        }
+
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if(permission === 'granted') console.log('Web-Benachrichtigungen aktiviert!');
+                });
+            }
+        }
+
+        async function requireUser() {
+            if (currentUser) {
+                requestNotificationPermission(); 
+                return true;
+            }
+            const name = await showModal({ 
+                title: "Hallo!", 
+                message: "Wer bist du? Bitte gib deinen Vornamen ein, damit wir wissen, wer hier gerade aktiv ist.", 
+                inputType: "text", 
+                placeholder: "Dein Vorname",
+                autocomplete: "given-name"
+            });
+            if (name) {
+                currentUser = name;
+                localStorage.setItem('familyBazarUser', currentUser);
+                updateHeaderUser();
+                requestNotificationPermission(); 
+                return true;
+            }
+            return false;
+        }
+
+        async function promptChangeUser() {
+            const name = await showModal({ 
+                title: "Benutzer wechseln", 
+                message: "Als wer möchtest du Family-Bazar nutzen?", 
+                inputType: "text", 
+                placeholder: "Vorname",
+                defaultValue: currentUser,
+                autocomplete: "given-name"
+            });
+            if (name !== null) {
+                currentUser = name || '';
+                if(currentUser) {
+                    localStorage.setItem('familyBazarUser', currentUser);
+                    requestNotificationPermission();
+                } else {
+                    localStorage.removeItem('familyBazarUser');
+                }
+                updateHeaderUser();
+                renderCurrentView(); 
+            }
+        }
+
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                if (!file) return resolve(null);
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 1000;
+                        const MAX_HEIGHT = 1000;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                        } else {
+                            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                    };
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function initApp() {
+            onSnapshot(collection(db, collPath), (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added" && initialDataLoaded) {
+                        const data = change.doc.data();
+                        if (data.sellerName && data.sellerName.toLowerCase() !== currentUser.toLowerCase()) {
+                            const thumb = (data.images && data.images.length > 0) ? data.images[0] : null;
+                            if (document.hidden) {
+                                showNotification("Neuer Artikel! 🎉", `${data.sellerName} bietet jetzt "${data.name}" an.`, thumb);
+                            } else {
+                                showToast("Neuer Artikel! 🎉", `${data.sellerName} bietet jetzt "${data.name}" an.`, thumb);
+                            }
+                        }
+                    }
+                });
+
+                initialDataLoaded = true;
+                items = [];
+                snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+                
+                if (currentView === 'detail' && selectedItem) {
+                    const updatedItem = items.find(i => i.id === selectedItem.id);
+                    if (updatedItem) selectedItem = updatedItem;
+                }
+                
+                localStorage.setItem('fbCurrentVisit', Date.now().toString());
+                renderCurrentView();
+
+            }, (error) => {
+                console.error(error);
+                showModal({ title: "Verbindungsproblem", message: "Die Daten konnten nicht geladen werden. Bitte Internet prüfen." });
+            });
+        }
+
+        let clickCount = 0;
+        let clickTimer = null;
+        logo.addEventListener('click', () => {
+            clickCount++;
+            clearTimeout(clickTimer);
+            if (clickCount >= 5) {
+                isAdmin = !isAdmin;
+                clickCount = 0;
+                btnAdminView.classList.toggle('hidden', !isAdmin);
+                showModal({ title: "System", message: isAdmin ? "Admin-Modus aktiviert 👑" : "Admin-Modus deaktiviert" });
+                if(!isAdmin && (currentView === 'admin' || currentView === 'master-archive')) goTo('home');
+                renderCurrentView();
+            } else {
+                clickTimer = setTimeout(() => clickCount = 0, 1500);
+            }
+        });
+
+        btnAdminView.addEventListener('click', () => { goTo(currentView === 'admin' ? 'home' : 'admin'); });
+
+        btnShowAdd.addEventListener('click', async () => {
+            if (currentView !== 'home' && currentView !== 'admin') {
+                goBack();
+            } else {
+                if (await requireUser()) { goTo('add'); }
+            }
+        });
+
+        btnShowWizard.addEventListener('click', async () => {
+            if (await requireUser()) {
+                wizardStep = 1;
+                wizardData = { name: '', description: '', category: categories[2], price: '', images: [] };
+                goTo('wizard');
+            }
+        });
+
+        function renderCurrentView() {
+            // FIX 1: Stelle sicher, dass die neue Ansicht IMMER oben anfängt
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            if (mainContent) mainContent.scrollTop = 0;
+
+            mainContent.innerHTML = '';
+            
+            if (currentView === 'home' || currentView === 'admin') {
+                btnShowAdd.innerHTML = '<i class="fa-solid fa-plus text-sm sm:text-base"></i>';
+                btnShowWizard.classList.remove('hidden');
+            } else {
+                btnShowAdd.innerHTML = '<i class="fa-solid fa-arrow-left text-sm sm:text-base"></i>';
+                btnShowWizard.classList.add('hidden');
+            }
+            
+            if (currentView === 'home') renderHome();
+            else if (currentView === 'add') renderAddForm();
+            else if (currentView === 'edit') renderAddForm(selectedItem);
+            else if (currentView === 'detail') renderItemDetail();
+            else if (currentView === 'admin') renderAdmin();
+            else if (currentView === 'wizard') renderWizard();
+            else if (currentView === 'archive') renderMyArchive();
+            else if (currentView === 'master-archive') renderMasterArchive();
+        }
+
+        function getGridClasses() {
+            return 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4';
+        }
+
+        function renderMyArchive() {
+            const container = document.createElement('div');
+            container.className = 'p-4 sm:p-6 fade-in pb-16';
+
+            const userItems = items.filter(item => {
+                const isMyItem = item.sellerName && currentUser && item.sellerName.toLowerCase() === currentUser.toLowerCase();
+                const isArchived = item.status === 'archived';
+                return isMyItem && isArchived;
+            });
+
+            container.innerHTML = `
+                <div class="mb-5 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-black text-green-900 tracking-tight flex items-center gap-2">
+                            <i class="fa-solid fa-box-archive text-green-600"></i> Mein Archiv
+                        </h2>
+                        <p class="text-gray-500 text-sm mt-1">Deine archivierten Artikel.</p>
+                    </div>
+                    <button id="btn-back-home" class="bg-green-100 text-green-800 px-3 py-1.5 rounded-xl font-bold text-sm hover:bg-green-200 transition"><i class="fa-solid fa-arrow-left mr-1"></i> Zurück</button>
+                </div>
+            `;
+
+            if (userItems.length === 0) {
+                container.innerHTML += `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-box-open text-5xl mb-4"></i><p class="font-bold text-lg">Dein Archiv ist leer.</p></div>`;
+            } else {
+                const grid = document.createElement('div');
+                grid.className = getGridClasses();
+                userItems.forEach(item => { grid.appendChild(createItemCard(item)); });
+                container.appendChild(grid);
+            }
+            mainContent.appendChild(container);
+            document.getElementById('btn-back-home').onclick = () => { goBack(); };
+        }
+
+        function renderMasterArchive() {
+            const container = document.createElement('div');
+            container.className = 'p-4 sm:p-6 fade-in pb-16';
+            const archivedItems = items.filter(item => item.status === 'archived');
+
+            container.innerHTML = `
+                <div class="mb-5 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-black text-green-900 tracking-tight flex items-center gap-2">
+                            <i class="fa-solid fa-crown text-amber-500"></i> Admin Archiv
+                        </h2>
+                        <p class="text-gray-500 text-sm mt-1">Alle archivierten Artikel.</p>
+                    </div>
+                    <button id="btn-back-admin" class="bg-green-100 text-green-800 px-3 py-1.5 rounded-xl font-bold text-sm hover:bg-green-200 transition"><i class="fa-solid fa-arrow-left mr-1"></i> Dashboard</button>
+                </div>
+            `;
+
+            if (archivedItems.length === 0) {
+                container.innerHTML += `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-box-open text-5xl mb-4"></i><p class="font-bold text-lg">Keine archivierten Artikel vorhanden.</p></div>`;
+            } else {
+                const grid = document.createElement('div');
+                grid.className = getGridClasses();
+                archivedItems.forEach(item => { grid.appendChild(createItemCard(item)); });
+                container.appendChild(grid);
+            }
+            mainContent.appendChild(container);
+            document.getElementById('btn-back-admin').onclick = () => { goBack(); };
+        }
+
+        function renderWizard() {
+            const formContainer = document.createElement('div');
+            formContainer.className = 'p-5 sm:p-8 fade-in w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl my-6 border border-green-50 flex flex-col relative pb-24';
+
+            let inner = '';
+            let stepTitle = '';
+            let stepText = '';
+
+            if (wizardStep === 1) {
+                stepTitle = 'Was bietest du an?';
+                stepText = 'Gib dem Artikel einen Namen.';
+                inner = `<input type="text" id="w-name" value="${wizardData.name}" placeholder="z.B. Holzspielzeug" class="w-full border-2 border-green-100 rounded-xl p-4 text-xl font-bold outline-none focus:border-green-500 text-center text-green-900">`;
+            } else if (wizardStep === 2) {
+                stepTitle = 'Welche Kategorie?';
+                stepText = 'Tippe auf das, was passt.';
+                inner = `<div class="grid grid-cols-2 gap-3">` + baseCategories.map(c =>
+                    `<button type="button" class="w-cat-btn px-3 py-4 rounded-xl border-2 shadow-sm ${wizardData.category === c ? 'bg-green-700 text-white border-green-700 transform scale-105' : 'bg-white text-green-700 border-green-100 hover:bg-green-50'} font-bold text-sm transition-all">${c}</button>`
+                ).join('') + `</div>`;
+            } else if (wizardStep === 3) {
+                stepTitle = 'Dein Wunschpreis';
+                stepText = 'Trage eine Zahl ein (leer lassen für Gratis).';
+                inner = `
+                    <div class="flex items-center gap-3 bg-green-50 p-5 rounded-2xl border-2 border-green-100 min-w-0">
+                        <input type="number" id="w-price" value="${wizardData.price}" placeholder="0" class="w-full bg-transparent text-4xl font-bold outline-none text-right text-green-900 min-w-0">
+                        <span class="text-4xl font-bold text-green-700 shrink-0">€</span>
+                    </div>`;
+            } else if (wizardStep === 4) {
+                stepTitle = 'Erzähl uns mehr!';
+                stepText = 'Zustand, Besonderheiten (optional).';
+                inner = `<textarea id="w-desc" rows="4" class="w-full border-2 border-green-100 rounded-xl p-4 text-base outline-none focus:border-green-500 text-gray-700">${wizardData.description}</textarea>`;
+            } else if (wizardStep === 5) {
+                stepTitle = 'Zeig her!';
+                stepText = 'Lade Fotos hoch.';
+                inner = `
+                    <div class="relative w-full min-h-[160px] border-2 border-dashed border-green-400 rounded-2xl p-5 flex flex-wrap gap-3 items-center justify-center bg-green-50 cursor-pointer">
+                        <div id="w-img-placeholder" class="text-center text-green-600/60 w-full py-6 pointer-events-none ${wizardData.images.length > 0 ? 'hidden' : ''}">
+                            <i class="fa-solid fa-camera text-5xl mb-3 text-green-500"></i>
+                            <p class="text-base font-bold">Fotos hier antippen</p>
+                        </div>
+                        <div id="w-img-preview" class="flex flex-wrap gap-3 w-full relative z-30 justify-center ${wizardData.images.length === 0 ? 'hidden' : ''}"></div>
+                        <input type="file" id="w-file" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    </div>`;
+            } else if (wizardStep === 6) {
+                stepTitle = 'Alles bereit!';
+                stepText = 'Dein Artikel wird jetzt veröffentlicht.';
+                inner = `
+                    <div class="bg-green-50 rounded-2xl p-5 text-base text-green-900 border-2 border-green-100">
+                        <p class="mb-3 flex justify-between"><span class="text-green-700">Artikel:</span> <strong>${wizardData.name}</strong></p>
+                        <p class="mb-3 flex justify-between"><span class="text-green-700">Kategorie:</span> <strong>${wizardData.category}</strong></p>
+                        <p class="flex justify-between"><span class="text-green-700">Preis:</span> <strong>${wizardData.price ? wizardData.price + ' €' : 'Gratis'}</strong></p>
+                    </div>`;
+            }
+
+            const totalSteps = 6;
+            const progress = Math.round((wizardStep / totalSteps) * 100);
+
+            formContainer.innerHTML = `
+                <div class="absolute top-0 left-0 right-0 h-2 bg-green-100 rounded-t-2xl overflow-hidden">
+                    <div class="bg-green-500 h-full transition-all duration-300" style="width: ${progress}%"></div>
+                </div>
+                <div class="text-center mb-6 mt-4">
+                    <h2 class="text-2xl font-black text-green-900 mb-1">${stepTitle}</h2>
+                    <p class="text-gray-500 text-sm px-2">${stepText}</p>
+                </div>
+                <div class="w-full mb-8">${inner}</div>
+                <div class="flex gap-3 mt-auto pt-4">
+                    ${wizardStep > 1 ? `<button type="button" id="btn-w-back" class="px-5 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition"><i class="fa-solid fa-arrow-left"></i></button>` : ''}
+                    <button type="button" id="btn-w-next" class="flex-1 bg-green-700 text-white font-bold rounded-xl py-3.5 shadow-md hover:bg-green-800 transition flex justify-center items-center gap-2">
+                        ${wizardStep === totalSteps ? '<i class="fa-solid fa-paper-plane"></i> Abschicken' : 'Weiter <i class="fa-solid fa-arrow-right"></i>'}
+                    </button>
+                </div>
+            `;
+
+            mainContent.appendChild(formContainer);
+
+            if (wizardStep === 2) {
+                document.querySelectorAll('.w-cat-btn').forEach(btn => {
+                    btn.onclick = () => { wizardData.category = btn.textContent; renderCurrentView(); };
+                });
+            }
+
+            if (wizardStep === 5) {
+                const wFile = document.getElementById('w-file');
+                const wPreview = document.getElementById('w-img-preview');
+                const wPlaceholder = document.getElementById('w-img-placeholder');
+
+                const renderWPreviews = () => {
+                    wPreview.innerHTML = '';
+                    if (wizardData.images.length > 0) {
+                        wPlaceholder.classList.add('hidden');
+                        wPreview.classList.remove('hidden');
+                        wizardData.images.forEach((b64, index) => {
+                            const imgWrap = document.createElement('div');
+                            imgWrap.className = 'w-20 h-20 relative z-40 shrink-0';
+                            imgWrap.innerHTML = `
+                                <img src="${b64}" class="w-full h-full object-cover rounded-xl shadow border-2 border-white pointer-events-none" />
+                                <button type="button" class="absolute -top-2 -right-2 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs shadow z-50 pointer-events-auto hover:bg-red-600"><i class="fa-solid fa-xmark"></i></button>
+                            `;
+                            imgWrap.querySelector('button').onclick = (e) => {
+                                e.stopPropagation();
+                                wizardData.images.splice(index, 1);
+                                renderWPreviews();
+                            };
+                            wPreview.appendChild(imgWrap);
+                        });
+                    } else {
+                        wPlaceholder.classList.remove('hidden');
+                        wPreview.classList.add('hidden');
+                    }
+                };
+                renderWPreviews();
+
+                wFile.onchange = async (e) => {
+                    const files = e.target.files;
+                    if (files) {
+                        for(let i=0; i<files.length; i++) {
+                            const b64 = await compressImage(files[i]);
+                            if(b64) wizardData.images.push(b64);
+                        }
+                        renderWPreviews();
+                    }
+                    wFile.value = '';
+                };
+            }
+
+            if (wizardStep > 1) {
+                document.getElementById('btn-w-back').onclick = () => {
+                    saveWizardData();
+                    wizardStep--;
+                    renderCurrentView();
+                };
+            }
+
+            const executeWizardNext = async () => {
+                saveWizardData();
+                if (wizardStep === 1 && !wizardData.name.trim()) return showModal({ title: "Halt!", message: "Wie heißt der Artikel?"});
+                
+                if (wizardStep < totalSteps) {
+                    wizardStep++;
+                    renderCurrentView();
+                } else {
+                    const btnNext = document.getElementById('btn-w-next');
+                    btnNext.disabled = true;
+                    btnNext.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Lade...';
+                    try {
+                        await addDoc(collection(db, collPath), {
+                            name: wizardData.name.trim(),
+                            description: wizardData.description.trim(),
+                            category: wizardData.category,
+                            price: wizardData.price ? Number(wizardData.price) : null,
+                            sellerName: currentUser,
+                            images: wizardData.images,
+                            status: 'available',
+                            buyerName: null,
+                            timestamp: Date.now()
+                        });
+                        goTo('home');
+                        showModal({ title: "Super!", message: "Dein Artikel ist online." });
+                    } catch (e) {
+                        showModal({ title: "Fehler", message: e.message });
+                        btnNext.disabled = false;
+                    }
+                }
+            };
+
+            document.getElementById('btn-w-next').onclick = executeWizardNext;
+
+            const activeInput = document.getElementById('w-name') || document.getElementById('w-price');
+            if (activeInput) {
+                activeInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        executeWizardNext();
+                    }
+                };
+            }
+
+            function saveWizardData() {
+                if(document.getElementById('w-name')) wizardData.name = document.getElementById('w-name').value;
+                if(document.getElementById('w-desc')) wizardData.description = document.getElementById('w-desc').value;
+                if(document.getElementById('w-price')) wizardData.price = document.getElementById('w-price').value;
+            }
+        }
+
+        function createItemCard(item) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden cursor-pointer transform transition hover:-translate-y-1 hover:shadow-md flex flex-col';
+            card.onclick = () => { selectedItem = item; goTo('detail'); };
+            
+            const isSold = item.status === 'sold';
+            const isArchived = item.status === 'archived';
+            const thumb = item.images && item.images.length > 0 ? item.images[0] : null;
+            
+            card.innerHTML = `
+                <div class="relative w-full h-40 sm:h-48 bg-green-50 shrink-0">
+                    ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover ${(isSold || isArchived) ? 'opacity-40 grayscale' : ''}" />` : `<div class="flex items-center justify-center h-full text-green-200"><i class="fa-solid fa-camera text-4xl"></i></div>`}
+                    ${isSold ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-2"><span class="bg-red-500/90 backdrop-blur-sm text-white text-xs sm:text-sm font-bold py-1.5 px-3 rounded-xl uppercase tracking-wider shadow-lg transform -rotate-12 border border-red-400 text-center leading-tight">Vergeben an<br>${item.buyerName || 'jemand'}</span></div>` : ''}
+                    ${isArchived ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-2"><span class="bg-blue-600/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wide shadow-sm">Archiviert</span></div>` : ''}
+                </div>
+                <div class="p-3 sm:p-4 flex flex-col flex-1 justify-between">
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm sm:text-base truncate mb-1">${item.name}</h4>
+                        <div class="text-[11px] sm:text-xs text-gray-500 mb-2 truncate flex items-center gap-1">
+                            <i class="fa-solid fa-user-tag text-green-600/70"></i> ${item.sellerName || 'Unbekannt'}
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end mt-1">
+                        <span class="text-[10px] sm:text-xs text-green-800 bg-green-100 px-2 py-1 rounded-md font-medium truncate max-w-[55%] shadow-sm">${item.category}</span>
+                        <span class="font-bold text-green-700 text-sm sm:text-base whitespace-nowrap">${item.price ? item.price + ' €' : 'Gratis'}</span>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        function renderHome() {
+            const topBar = document.createElement('div');
+            topBar.className = 'p-4 bg-white shadow-sm sticky top-0 z-20';
+            
+            const searchBox = document.createElement('div');
+            searchBox.className = 'relative mb-3 flex gap-2 max-w-4xl mx-auto';
+            searchBox.innerHTML = `
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-green-700 opacity-50"></i>
+                    <input type="text" id="searchInput" placeholder="Artikel, Anbieter, Kategorie..." value="${currentSearch}" class="w-full bg-green-50/50 border border-green-100 rounded-2xl py-2.5 pl-11 pr-4 outline-none focus:ring-2 focus:ring-green-500 shadow-inner text-sm">
+                </div>
+                <div class="relative z-50">
+                    <button id="btnSortToggle" class="bg-white border border-green-100 rounded-2xl w-11 h-full flex justify-center items-center text-green-700 shadow-sm hover:bg-green-50">
+                        <i class="fa-solid fa-arrow-down-short-wide"></i>
+                    </button>
+                    <div id="sortDropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-green-50 py-2">
+                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-gray-700 ${currentSort === 'date-desc' ? 'font-bold text-green-700' : ''}" data-sort="date-desc"><i class="fa-regular fa-clock w-5"></i> Neueste zuerst</button>
+                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-gray-700 ${currentSort === 'name-asc' ? 'font-bold text-green-700' : ''}" data-sort="name-asc"><i class="fa-solid fa-a w-5"></i> Alphabetisch (A-Z)</button>
+                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-gray-700 ${currentSort === 'price-asc' ? 'font-bold text-green-700' : ''}" data-sort="price-asc"><i class="fa-solid fa-euro-sign w-5"></i> Günstigste zuerst</button>
+                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-gray-700 ${currentSort === 'seller-asc' ? 'font-bold text-green-700' : ''}" data-sort="seller-asc"><i class="fa-solid fa-user w-5"></i> Nach Anbieter</button>
+                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-gray-700 ${currentSort === 'category-asc' ? 'font-bold text-green-700' : ''}" data-sort="category-asc"><i class="fa-solid fa-tags w-5"></i> Nach Kategorie</button>
+                    </div>
+                </div>
+            `;
+            
+            const catScroll = document.createElement('div');
+            catScroll.className = 'flex overflow-x-auto hide-scroll gap-2 pb-1 max-w-4xl mx-auto';
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 ${currentFilter === cat ? 'bg-green-700 text-white shadow-md transform scale-105' : 'bg-white text-green-800 border border-green-200 hover:bg-green-50'}`;
+                
+                if (cat === 'Neu für Dich') {
+                    btn.innerHTML = `<i class="fa-solid fa-sparkles text-amber-300"></i> Neu für Dich`;
+                } else {
+                    btn.textContent = cat;
+                }
+
+                btn.onclick = () => { currentFilter = cat; renderCurrentView(); };
+                catScroll.appendChild(btn);
+            });
+
+            topBar.appendChild(searchBox);
+            topBar.appendChild(catScroll);
+            mainContent.appendChild(topBar);
+
+            const container = document.createElement('div');
+            container.className = 'p-4 sm:p-6 fade-in pb-16';
+
+            let filteredItems = items.filter(item => {
+                const isNotArchived = item.status !== 'archived';
+                let matchCat = false;
+                if (currentFilter === 'Alle') matchCat = true;
+                else if (currentFilter === 'Neu für Dich') matchCat = (item.timestamp >= neuFuerDichTimestamp) && (item.sellerName !== currentUser);
+                else matchCat = item.category === currentFilter;
+
+                const term = currentSearch.toLowerCase();
+                const matchSearch = (item.name || '').toLowerCase().includes(term) || 
+                                    (item.description || '').toLowerCase().includes(term) ||
+                                    (item.category || '').toLowerCase().includes(term) ||
+                                    (item.sellerName || '').toLowerCase().includes(term);
+                                    
+                return matchCat && matchSearch && isNotArchived;
+            });
+
+            filteredItems.sort((a, b) => {
+                if (currentSort === 'date-desc') return (b.timestamp || 0) - (a.timestamp || 0);
+                if (currentSort === 'name-asc') return (a.name || '').localeCompare(b.name || '');
+                if (currentSort === 'price-asc') return (a.price || 0) - (b.price || 0);
+                if (currentSort === 'seller-asc') return (a.sellerName || '').localeCompare(b.sellerName || '');
+                if (currentSort === 'category-asc') return (a.category || '').localeCompare(b.category || '');
+                return 0;
+            });
+
+            if (filteredItems.length === 0) {
+                if (currentFilter === 'Neu für Dich') {
+                    container.innerHTML = `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-mug-hot text-6xl mb-4"></i><p class="font-bold text-lg px-4">Seit deinem letzten Besuch wurde nichts Neues hochgeladen.</p></div>`;
+                } else {
+                    container.innerHTML = `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-box-open text-6xl mb-4"></i><p class="font-bold text-lg">Keine Artikel gefunden.</p></div>`;
+                }
+            } else {
+                const isGrouped = currentSort === 'seller-asc' || currentSort === 'category-asc';
+                let currentGroup = null;
+                let currentGrid = null;
+
+                filteredItems.forEach(item => {
+                    let itemGroup = 'all';
+                    if (isGrouped) {
+                        itemGroup = currentSort === 'seller-asc' ? (item.sellerName || 'Unbekannt') : (item.category || 'Ohne Kategorie');
+                    }
+
+                    if (itemGroup !== currentGroup) {
+                        currentGroup = itemGroup;
+                        if (isGrouped) {
+                            const groupTitle = document.createElement('h3');
+                            groupTitle.className = 'font-bold text-green-900 mt-8 mb-4 text-lg flex items-center gap-2 first:mt-0';
+                            groupTitle.innerHTML = currentSort === 'seller-asc' 
+                                ? `<i class="fa-solid fa-user-circle text-green-600"></i> ${itemGroup}`
+                                : `<i class="fa-solid fa-tag text-green-600"></i> ${itemGroup}`;
+                            container.appendChild(groupTitle);
+                        }
+                        currentGrid = document.createElement('div');
+                        currentGrid.className = getGridClasses();
+                        container.appendChild(currentGrid);
+                    }
+                    currentGrid.appendChild(createItemCard(item));
+                });
+            }
+
+            mainContent.appendChild(container);
+
+            const searchInput = document.getElementById('searchInput');
+            searchInput.oninput = (e) => {
+                currentSearch = e.target.value;
+                setTimeout(() => { if (searchInput.value === currentSearch) renderCurrentView(); }, 300);
+            };
+
+            const btnSortToggle = document.getElementById('btnSortToggle');
+            const sortDropdown = document.getElementById('sortDropdown');
+            btnSortToggle.onclick = (e) => { e.stopPropagation(); sortDropdown.classList.toggle('hidden'); };
+            document.onclick = () => sortDropdown.classList.add('hidden');
+
+            document.querySelectorAll('.sort-option').forEach(btn => {
+                btn.onclick = (e) => {
+                    currentSort = e.target.closest('button').dataset.sort;
+                    sortDropdown.classList.add('hidden');
+                    renderCurrentView();
+                };
+            });
+        }
+
+        function renderAddForm(editItem = null) {
+            const formContainer = document.createElement('div');
+            formContainer.className = 'p-5 sm:p-8 fade-in w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl my-6 border border-green-50';
+            
+            const vName = editItem ? editItem.name : '';
+            const vDesc = editItem ? editItem.description : '';
+            const vCat = editItem ? editItem.category : baseCategories[0];
+            const vPrice = editItem && editItem.price !== null ? editItem.price : '';
+
+            formContainer.innerHTML = `
+                <form id="item-form">
+                    <h2 class="text-2xl font-bold text-green-900 mb-6 flex items-center gap-2">
+                        <i class="fa-solid ${editItem ? 'fa-pen' : 'fa-hand-holding-heart'} text-green-600"></i> 
+                        ${editItem ? 'Artikel bearbeiten' : 'Neuer Artikel'}
+                    </h2>
+                    
+                    <div class="mb-5">
+                        <label class="block text-sm font-semibold text-green-900 mb-2">Fotos</label>
+                        <div class="relative w-full min-h-[140px] border-2 border-dashed border-green-300 rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-center bg-green-50/50 cursor-pointer hover:bg-green-50 transition">
+                            <div id="img-placeholder" class="text-center text-green-600/60 w-full py-4 pointer-events-none">
+                                <i class="fa-solid fa-cloud-arrow-up text-4xl mb-2 text-green-400"></i>
+                                <p class="text-sm font-medium">Bilder hier antippen</p>
+                            </div>
+                            <div id="img-preview-container" class="hidden flex flex-wrap gap-3 w-full relative z-30 justify-center"></div>
+                            <input type="file" id="file-input" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-green-900 mb-1.5">Titel</label>
+                        <input type="text" id="add-name" value="${vName}" required class="w-full border-2 border-green-100 rounded-xl p-3 text-base outline-none focus:border-green-500">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-green-900 mb-1.5">Beschreibung</label>
+                        <textarea id="add-desc" rows="3" class="w-full border-2 border-green-100 rounded-xl p-3 text-base outline-none focus:border-green-500">${vDesc}</textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-green-900 mb-1.5">Kategorie</label>
+                            <select id="add-cat" class="w-full border-2 border-green-100 rounded-xl p-3 text-base outline-none focus:border-green-500 bg-white">
+                                ${baseCategories.map(c => `<option value="${c}" ${c === vCat ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-green-900 mb-1.5">Preis (€)</label>
+                            <input type="number" id="add-price" value="${vPrice}" class="w-full border-2 border-green-100 rounded-xl p-3 text-base outline-none focus:border-green-500" placeholder="Gratis">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-save" class="w-full bg-green-700 text-white font-bold rounded-xl py-3.5 shadow-md hover:bg-green-800 transition flex justify-center items-center gap-2">
+                        <i class="fa-solid ${editItem ? 'fa-floppy-disk' : 'fa-paper-plane'}"></i> <span id="btn-save-text">${editItem ? 'Speichern' : 'Hochladen'}</span>
+                    </button>
+                </form>
+            `;
+
+            mainContent.appendChild(formContainer);
+
+            const fileInput = document.getElementById('file-input');
+            const imgPreviewContainer = document.getElementById('img-preview-container');
+            const imgPlaceholder = document.getElementById('img-placeholder');
+            
+            let currentBase64Array = editItem && editItem.images ? [...editItem.images] : [];
+
+            function renderPreviews() {
+                imgPreviewContainer.innerHTML = '';
+                if (currentBase64Array.length > 0) {
+                    imgPlaceholder.classList.add('hidden');
+                    imgPreviewContainer.classList.remove('hidden');
+                    currentBase64Array.forEach((b64, index) => {
+                        const imgWrap = document.createElement('div');
+                        imgWrap.className = 'w-20 h-20 relative z-40 shrink-0';
+                        imgWrap.innerHTML = `
+                            <img src="${b64}" class="w-full h-full object-cover rounded-xl shadow-md border-2 border-white pointer-events-none" />
+                            <button type="button" class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow z-50 pointer-events-auto hover:bg-red-600 transition">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        `;
+                        imgWrap.querySelector('button').onclick = (e) => { 
+                            e.preventDefault(); e.stopPropagation(); 
+                            currentBase64Array.splice(index, 1); 
+                            renderPreviews(); 
+                        };
+                        imgPreviewContainer.appendChild(imgWrap);
+                    });
+                } else {
+                    imgPlaceholder.classList.remove('hidden');
+                    imgPreviewContainer.classList.add('hidden');
+                }
+            }
+            renderPreviews();
+
+            fileInput.onchange = async (e) => {
+                const files = e.target.files;
+                if (files) {
+                    for(let i=0; i<files.length; i++) {
+                        const b64 = await compressImage(files[i]);
+                        if(b64) currentBase64Array.push(b64);
+                    }
+                    renderPreviews();
+                }
+                fileInput.value = '';
+            };
+
+            document.getElementById('item-form').onsubmit = async (e) => {
+                e.preventDefault(); 
+                const btnSave = document.getElementById('btn-save');
+                btnSave.disabled = true;
+                document.getElementById('btn-save-text').textContent = 'Speichere...';
+
+                try {
+                    const dataObj = {
+                        name: document.getElementById('add-name').value.trim(),
+                        description: document.getElementById('add-desc').value.trim(),
+                        category: document.getElementById('add-cat').value,
+                        price: document.getElementById('add-price').value ? Number(document.getElementById('add-price').value) : null,
+                        images: currentBase64Array
+                    };
+
+                    if (editItem) {
+                        await updateDoc(doc(db, collPath, editItem.id), dataObj);
+                        selectedItem = { ...editItem, ...dataObj };
+                    } else {
+                        dataObj.sellerName = currentUser;
+                        dataObj.status = 'available';
+                        dataObj.buyerName = null;
+                        dataObj.timestamp = Date.now();
+                        await addDoc(collection(db, collPath), dataObj);
+                    }
+                    goBack(); 
+                } catch (error) {
+                    showModal({ title: "Fehler", message: error.message });
+                    btnSave.disabled = false;
+                }
+            };
+        }
+
+        function renderItemDetail() {
+            if (!selectedItem) { goTo('home'); return; }
+
+            const item = selectedItem;
+            const isSold = item.status === 'sold';
+            const isArchived = item.status === 'archived';
+            const displayImages = item.images && item.images.length > 0 ? item.images : [];
+            
+            const isOwner = isAdmin || (currentUser && item.sellerName && currentUser.toLowerCase() === item.sellerName.toLowerCase());
+            const isBuyer = currentUser && item.buyerName && currentUser.toLowerCase() === item.buyerName.toLowerCase();
+            
+            const detailContainer = document.createElement('div');
+            detailContainer.className = 'bg-white min-h-full pb-10 fade-in relative mx-auto w-full max-w-3xl shadow-xl';
+
+            let imagesHtml = '';
+            if (displayImages.length > 0) {
+                imagesHtml = `<div class="relative w-full h-64 sm:h-96 bg-green-50 group">
+                    <div id="image-carousel" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory h-full scroll-smooth">`;
+                
+                displayImages.forEach(img => {
+                    imagesHtml += `<div class="snap-center shrink-0 w-full h-full relative"><img src="${img}" class="w-full h-full object-contain sm:object-cover ${(isSold || isArchived) ? 'opacity-40 grayscale' : ''}" /></div>`;
+                });
+                
+                imagesHtml += `</div>`;
+
+                if (displayImages.length > 1) {
+                    imagesHtml += `
+                        <button id="carousel-prev" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-green-900 w-10 h-10 rounded-full shadow-lg flex items-center justify-center z-20 backdrop-blur-sm transition text-lg">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button id="carousel-next" class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-green-900 w-10 h-10 rounded-full shadow-lg flex items-center justify-center z-20 backdrop-blur-sm transition text-lg">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-20 bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                            ${displayImages.map((_, i) => `<div class="carousel-dot w-2 h-2 rounded-full ${i === 0 ? 'bg-white' : 'bg-white/50'} transition-colors duration-200"></div>`).join('')}
+                        </div>
+                    `;
+                }
+                imagesHtml += `</div>`;
+            } else {
+                imagesHtml = `<div class="relative w-full h-64 sm:h-96 bg-green-50 flex items-center justify-center text-green-200"><i class="fa-solid fa-image text-6xl"></i></div>`;
+            }
+
+            // FIX 2: Kaufen-Button direkt ins HTML einbauen, sodass er unter dem Bild sitzt
+            let actionButtonsHtml = '';
+            if (!isArchived) {
+                if (!isSold) {
+                    actionButtonsHtml = `<button id="btn-buy" class="w-full bg-green-700 text-white font-bold rounded-xl py-4 shadow-md hover:bg-green-800 transition text-lg flex items-center justify-center gap-2"><i class="fa-solid fa-heart"></i> Das möchte ich!</button>`;
+                } else if (isBuyer) {
+                    actionButtonsHtml = `<button id="btn-cancel-buy" class="w-full bg-orange-600 text-white font-bold rounded-xl py-4 shadow-md hover:bg-orange-700 transition text-base flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-left"></i> Meine Reservierung zurücknehmen</button>`;
+                }
+            }
+
+            detailContainer.innerHTML = `
+                <div class="relative w-full">
+                    ${imagesHtml}
+                    ${isSold ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-4"><span class="bg-red-500/90 backdrop-blur-sm text-white text-lg sm:text-2xl font-black py-3 px-6 rounded-2xl uppercase tracking-wider shadow-xl transform -rotate-12 border-2 border-red-400 text-center leading-tight">Vergeben an<br>${item.buyerName}</span></div>` : ''}
+                    ${isArchived ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-4"><span class="bg-blue-500/90 backdrop-blur-sm text-white text-lg sm:text-2xl font-black py-3 px-6 rounded-2xl uppercase tracking-wider shadow-xl transform -rotate-12 border-2 border-blue-400 text-center leading-tight">Abgeholt (Archiv)</span></div>` : ''}
+                </div>
+                
+                <div class="px-5 pt-5 pb-1">
+                    ${actionButtonsHtml}
+                </div>
+
+                <div class="p-5 sm:p-8 pt-4">
+                    <button class="mb-5 text-green-700 font-bold text-sm flex items-center gap-1.5 hover:text-green-900 transition" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i> Zurück</button>
+
+                    <div class="flex justify-between items-start mb-4">
+                        <h2 class="text-2xl sm:text-3xl font-bold text-green-900 leading-tight">${item.name}</h2>
+                        <span class="text-2xl sm:text-3xl font-black text-green-700 whitespace-nowrap ml-4">${item.price ? item.price + ' €' : 'Gratis'}</span>
+                    </div>
+                    
+                    <div class="inline-block bg-green-100 text-green-800 text-sm px-3 py-1.5 rounded-lg font-bold mb-6 shadow-sm">${item.category}</div>
+                    <p class="text-gray-700 leading-relaxed mb-8 whitespace-pre-line text-sm sm:text-base">${item.description || 'Keine Beschreibung angegeben.'}</p>
+                    
+                    <div class="bg-green-50 rounded-2xl p-4 sm:p-5 flex items-center mb-8 border border-green-100">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-green-200 flex items-center justify-center text-green-800 font-bold text-xl sm:text-2xl mr-4 shadow-inner">${(item.sellerName || '?').charAt(0).toUpperCase()}</div>
+                        <div>
+                            <p class="text-xs sm:text-sm text-green-600 font-bold uppercase tracking-wider mb-0.5">Anbieter</p>
+                            <p class="font-bold text-green-900 text-lg sm:text-xl">${item.sellerName || 'Unbekannt'}</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        ${isOwner ? `
+                            <div class="flex gap-2 sm:gap-3 pt-6 border-t border-gray-100 flex-col sm:flex-row">
+                                ${isSold ? `
+                                    <button id="btn-reset" class="flex-1 bg-white border-2 border-green-100 text-green-700 font-bold rounded-xl py-3 hover:bg-green-50 transition text-sm sm:text-base"><i class="fa-solid fa-rotate-left mr-2"></i> Freigeben</button>
+                                    <button id="btn-archive" class="flex-1 bg-white border-2 border-blue-100 text-blue-600 font-bold rounded-xl py-3 hover:bg-blue-50 transition text-sm sm:text-base"><i class="fa-solid fa-box-archive mr-2"></i> Archivieren</button>
+                                ` : (isArchived ? `
+                                    <button id="btn-unarchive" class="w-full bg-white border-2 border-green-100 text-green-700 font-bold rounded-xl py-3 hover:bg-green-50 transition text-sm sm:text-base"><i class="fa-solid fa-rotate-left mr-2"></i> Will ich doch nicht (Reaktivieren)</button>
+                                ` : `
+                                    <button id="btn-edit" class="flex-1 bg-white border-2 border-green-100 text-green-700 font-bold rounded-xl py-3 hover:bg-green-50 transition text-sm sm:text-base"><i class="fa-solid fa-pen mr-2"></i> Bearbeiten</button>
+                                `)}
+                                <button id="btn-delete" class="w-full sm:w-auto mt-2 sm:mt-0 bg-white border-2 border-red-100 text-red-500 font-bold rounded-xl py-3 px-6 hover:bg-red-50 transition text-sm sm:text-base"><i class="fa-solid fa-trash mr-2"></i> Löschen</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            mainContent.appendChild(detailContainer);
+
+            if (displayImages.length > 1) {
+                const carousel = document.getElementById('image-carousel');
+                const btnPrev = document.getElementById('carousel-prev');
+                const btnNext = document.getElementById('carousel-next');
+                const dots = document.querySelectorAll('.carousel-dot');
+
+                let currentIndex = 0;
+
+                const updateDots = (index) => {
+                    dots.forEach((dot, i) => {
+                        if (i === index) {
+                            dot.classList.remove('bg-white/50');
+                            dot.classList.add('bg-white');
+                        } else {
+                            dot.classList.remove('bg-white');
+                            dot.classList.add('bg-white/50');
+                        }
+                    });
+                };
+
+                const scrollToImg = (index) => {
+                    if (index < 0) index = displayImages.length - 1;
+                    if (index >= displayImages.length) index = 0;
+                    currentIndex = index;
+                    carousel.scrollTo({ left: carousel.offsetWidth * currentIndex, behavior: 'smooth' });
+                };
+
+                btnPrev.onclick = () => scrollToImg(currentIndex - 1);
+                btnNext.onclick = () => scrollToImg(currentIndex + 1);
+
+                carousel.addEventListener('scroll', () => {
+                    const scrollIndex = Math.round(carousel.scrollLeft / carousel.offsetWidth);
+                    if (scrollIndex !== currentIndex) {
+                        currentIndex = scrollIndex;
+                        updateDots(currentIndex);
+                    }
+                });
+            }
+
+            const btnBuy = document.getElementById('btn-buy');
+            if (btnBuy) {
+                btnBuy.onclick = async () => {
+                    if (!await requireUser()) return; 
+                    const confirm = await showModal({ title: "Fantastisch!", message: `Möchtest du den Artikel auf deinen Namen (${currentUser}) reservieren?` });
+                    if (confirm !== null) {
+                        try {
+                            await updateDoc(doc(db, collPath, item.id), { status: 'sold', buyerName: currentUser, soldAt: Date.now() });
+                            goBack();
+                        } catch (e) { showModal({ title: "Fehler", message: e.message }); }
+                    }
+                };
+            }
+
+            const btnCancelBuy = document.getElementById('btn-cancel-buy');
+            if (btnCancelBuy) {
+                btnCancelBuy.onclick = async () => {
+                    const confirm = await showModal({ title: "Zurücknehmen?", message: "Möchtest du deine Reservierung für diesen Artikel aufheben?" });
+                    if (confirm !== null) {
+                        try {
+                            await updateDoc(doc(db, collPath, item.id), { status: 'available', buyerName: null });
+                            selectedItem.status = 'available';
+                            selectedItem.buyerName = null;
+                            renderCurrentView();
+                        } catch (e) { showModal({ title: "Fehler", message: e.message }); }
+                    }
+                };
+            }
+
+            if (isOwner) {
+                const btnEdit = document.getElementById('btn-edit');
+                if (btnEdit) btnEdit.onclick = () => { goTo('edit'); };
+
+                const btnReset = document.getElementById('btn-reset');
+                if (btnReset) btnReset.onclick = async () => {
+                    await updateDoc(doc(db, collPath, item.id), { status: 'available', buyerName: null });
+                    selectedItem.status = 'available'; selectedItem.buyerName = null; renderCurrentView();
+                };
+
+                const btnArchive = document.getElementById('btn-archive');
+                if (btnArchive) btnArchive.onclick = async () => {
+                    await updateDoc(doc(db, collPath, item.id), { status: 'archived' });
+                    goBack();
+                };
+
+                const btnUnarchive = document.getElementById('btn-unarchive');
+                if (btnUnarchive) btnUnarchive.onclick = async () => {
+                    await updateDoc(doc(db, collPath, item.id), { status: 'available', buyerName: null });
+                    selectedItem.status = 'available'; selectedItem.buyerName = null; goTo('home');
+                };
+
+                const btnDelete = document.getElementById('btn-delete');
+                if (btnDelete) btnDelete.onclick = async () => {
+                    const confirm = await showModal({ title: "Sicher?", message: "Soll der Artikel gelöscht werden?" });
+                    if (confirm !== null) {
+                        await deleteDoc(doc(db, collPath, item.id));
+                        goBack();
+                    }
+                };
+            }
+        }
+
+        function renderAdmin() {
+            const adminContainer = document.createElement('div');
+            adminContainer.className = 'p-5 sm:p-8 fade-in min-h-full pb-20 max-w-4xl mx-auto';
+            
+            const soldItems = items.filter(i => i.status === 'sold' || i.status === 'archived');
+            const grouped = {};
+            let totalRevenue = 0;
+            
+            soldItems.forEach(item => {
+                const name = item.buyerName || 'Unbekannt';
+                if(!grouped[name]) grouped[name] = { total: 0, items: [] };
+                grouped[name].items.push(item);
+                const priceNum = item.price || 0;
+                grouped[name].total += priceNum;
+                totalRevenue += priceNum;
+            });
+
+            let html = `
+                <div class="bg-green-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl mb-8 relative overflow-hidden">
+                    <i class="fa-solid fa-crown absolute -right-6 -top-6 text-[8rem] opacity-10"></i>
+                    <h2 class="font-black text-3xl mb-2 relative z-10">Admin Dashboard</h2>
+                    <p class="text-green-200 text-sm sm:text-base relative z-10 mb-6">Übersicht aller Verkäufe.</p>
+                    
+                    <div class="flex gap-4 flex-wrap relative z-10">
+                        <div class="bg-black/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
+                            <span class="text-xs sm:text-sm font-bold text-green-100 block mb-1">Gesamtumsatz</span>
+                            <span class="text-2xl sm:text-3xl font-black">${totalRevenue} €</span>
+                        </div>
+                        <button id="btn-open-master-archive" class="bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl p-4 sm:p-5 text-left transition flex-1 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs sm:text-sm font-bold text-green-100 block mb-1">Archiv-Zentrale</span>
+                                <span class="text-base sm:text-lg font-bold"><i class="fa-solid fa-box-archive mr-2"></i> Alle Archivartikel</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            if (Object.keys(grouped).length === 0) {
+                html += `<div class="bg-white rounded-2xl p-10 text-center text-gray-500 shadow-sm border border-green-50"><i class="fa-solid fa-wind text-5xl mb-4 opacity-50"></i><p class="text-lg font-bold">Noch keine Reservierungen vorhanden.</p></div>`;
+            } else {
+                for (const [buyer, data] of Object.entries(grouped)) {
+                    html += `
+                        <div class="bg-white rounded-2xl shadow-md mb-6 border border-green-100 overflow-hidden">
+                            <div class="bg-green-100 p-4 sm:p-5 font-bold text-green-900 flex justify-between items-center">
+                                <span class="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl"><i class="fa-solid fa-user-tag text-green-600"></i> ${buyer}</span>
+                                <span class="bg-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-sm text-green-800 text-lg sm:text-xl">${data.total > 0 ? data.total + ' €' : '0 €'}</span>
+                            </div>
+                            <ul class="divide-y divide-green-50">
+                                ${data.items.map(item => {
+                                    const thumb = item.images && item.images.length > 0 ? item.images[0] : null;
+                                    const isArchived = item.status === 'archived';
+                                    return `
+                                    <li class="p-4 sm:p-5 text-sm sm:text-base flex justify-between items-center hover:bg-green-50 transition cursor-pointer item-row" data-id="${item.id}">
+                                        <div class="flex items-center pointer-events-none">
+                                            ${thumb ? `<img src="${thumb}" class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover mr-4 shadow-sm border-2 border-white ${isArchived ? 'grayscale opacity-70' : ''}">` : `<div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-green-50 mr-4 flex items-center justify-center text-green-300"><i class="fa-solid fa-box text-2xl"></i></div>`}
+                                            <div>
+                                                <p class="font-bold text-gray-800 text-base sm:text-lg">${item.name} ${isArchived ? '<span class="text-[10px] sm:text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg ml-2 font-bold">Archiviert</span>' : ''}</p>
+                                                <p class="text-xs sm:text-sm text-gray-500 mt-1 font-medium">von ${item.sellerName || 'Unbekannt'}</p>
+                                            </div>
+                                        </div>
+                                        <span class="font-bold text-green-700 text-lg sm:text-xl">${item.price ? item.price + ' €' : '0 €'}</span>
+                                    </li>
+                                    `
+                                }).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+            }
+
+            adminContainer.innerHTML = html;
+            mainContent.appendChild(adminContainer);
+
+            document.getElementById('btn-open-master-archive').onclick = () => { goTo('master-archive'); };
+
+            adminContainer.querySelectorAll('.item-row').forEach(row => {
+                row.onclick = () => {
+                    selectedItem = items.find(i => i.id === row.dataset.id);
+                    goTo('detail');
+                };
+            });
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
