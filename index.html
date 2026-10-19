@@ -133,6 +133,9 @@
         
         let seenItems = JSON.parse(localStorage.getItem('fbSeenItems') || '[]');
 
+        // FIX: Wir merken uns die gesuchte Artikel-ID BEVOR die URL aufgeräumt wird
+        const initialItemId = new URLSearchParams(window.location.search).get('item');
+
         // --- Lightbox Logik mit Wischen ---
         let lbImages = [];
         let lbIndex = 0;
@@ -247,10 +250,9 @@
         setupPWA();
 
         function initSession() {
-            const urlParams = new URLSearchParams(window.location.search);
             const cleanUrl = window.location.href.split('?')[0];
 
-            if (urlParams.get('item')) {
+            if (initialItemId) {
                 currentView = 'detail';
                 // 1. Unterschiebe die Home-Seite als ersten Eintrag, damit "Zurück" zur Startseite führt!
                 history.replaceState({ view: 'home' }, '', cleanUrl);
@@ -500,13 +502,16 @@
                 snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
                 
                 if (isFirstLoad) {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const queryItem = urlParams.get('item');
-                    if (queryItem) {
-                        const target = items.find(i => i.id === queryItem);
+                    // Verwende die ID, die wir VOR dem Aufräumen der URL gerettet haben
+                    if (initialItemId) {
+                        const target = items.find(i => i.id === initialItemId);
                         if (target) {
                             selectedItem = target;
                             currentView = 'detail';
+                            if (!seenItems.includes(target.id)) {
+                                seenItems.push(target.id);
+                                localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
+                            }
                         } else {
                             currentView = 'home';
                             history.replaceState({ view: 'home' }, '', window.location.href.split('?')[0]);
@@ -1675,4 +1680,4 @@
         initApp();
     </script>
 </body>
-</html>``
+</html>
