@@ -11,8 +11,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="logo.png">
     
-    <!-- Inline Manifest for Single File App -->
-    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiRmFtaWx5LUJhemFyIiwic2hvcnRfbmFtZSI6IkZhbUJhemFyIiwic3RhcnRfdXJsIjoiLi8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjZjBmZGY0IiwidGhlbWVfY29sb3IiOiIjMTU4MDNkIiwiaWNvbnMiOlt7InNyYyI6ImxvZ28ucG5nIiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJtYXNrYWJsZSBhbnkifSx7InNyYyI6ImxvZ28ucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJtYXNrYWJsZSBhbnkifV19">
+    <!-- SAUBERE MANIFEST EINBINDUNG -->
+    <link rel="manifest" href="manifest.json">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -119,7 +119,6 @@
         const db = getFirestore(app);
         const collPath = "angebote";
 
-        // Deep-Link auslesen, BEVOR die URL manipuliert wird
         const urlParams = new URLSearchParams(window.location.search);
         const initialItemId = urlParams.get('item');
         const cleanUrl = window.location.href.split('?')[0];
@@ -210,8 +209,6 @@
                 lbOverlay.classList.add('hidden'); 
             }
         });
-        // --- Ende Lightbox Logik ---
-
 
         function setupPWA() {
             const swCode = `
@@ -256,10 +253,10 @@
         setupPWA();
 
         function initSession() {
-            // FIX: Kein pushen mehr am Anfang, das verhindert den "Kettenstart" in Chrome.
             if (initialItemId) {
                 currentView = 'detail';
-                history.replaceState({ view: 'detail' }, '', cleanUrl);
+                history.replaceState({ view: 'home' }, '', cleanUrl); 
+                history.pushState({ view: 'detail' }, '', cleanUrl);  
             } else {
                 history.replaceState({ view: 'home' }, '', cleanUrl);
             }
@@ -320,8 +317,6 @@
 
         function goBack() {
             if (currentView !== 'home') {
-                // FIX: Wenn wir von einem Link kommen und der UI-Zurück-Button gedrückt wird, 
-                // erzwingen wir die Startseite, statt die App zu beenden.
                 if (!hasNavigated && initialItemId) {
                     goTo('home');
                 } else {
@@ -515,6 +510,7 @@
                         const target = items.find(i => i.id === initialItemId);
                         if (target) {
                             selectedItem = target;
+                            currentView = 'detail';
                             if (!seenItems.includes(target.id)) {
                                 seenItems.push(target.id);
                                 localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
@@ -1303,6 +1299,7 @@
                         
                         selectedItem = { id: newDocRef.id, ...dataObj };
                         
+                        // Konfetti auch im normalen + Menü! 🎉
                         if (window.confetti) {
                             window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#15803d', '#4ade80', '#fef08a'], zIndex: 1000 });
                         }
@@ -1695,4 +1692,3 @@
     </script>
 </body>
 </html>
-```eof
