@@ -106,6 +106,9 @@
                         <button id="dropdown-install-app" class="hidden w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5 font-bold text-teal-700 border-b border-gray-100">
                             <i class="fa-solid fa-download w-4 text-center"></i> App installieren
                         </button>
+                        <button id="dropdown-enable-push" class="w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5 border-b border-gray-100">
+                            <i class="fa-solid fa-bell w-4 text-teal-700 text-center"></i> Benachrichtigungen an
+                        </button>
                         <button id="dropdown-change-user" class="w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5">
                             <i class="fa-solid fa-user-pen w-4 text-teal-700 text-center"></i> Benutzer wechseln
                         </button>
@@ -256,22 +259,7 @@
         });
 
         function setupPWA() {
-            const swCode = `
-                self.addEventListener('install', (event) => self.skipWaiting());
-                self.addEventListener('activate', (event) => event.waitUntil(clients.claim()));
-                self.addEventListener('fetch', (event) => {
-                    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
-                });
-            `;
-            const blob = new Blob([swCode], { type: 'application/javascript' });
-            const swUrl = URL.createObjectURL(blob);
-
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed: ', err));
-                });
-            }
-
+            // Nur PWA Install Prompt - Keine Service Worker Injection mehr, um OneSignal nicht zu blockieren!
             let deferredPrompt;
             const installBtn = document.getElementById('dropdown-install-app');
 
@@ -283,7 +271,7 @@
 
             if (installBtn) {
                 installBtn.addEventListener('click', async () => {
-                    userDropdown.classList.add('hidden');
+                    document.getElementById('user-dropdown').classList.add('hidden');
                     if (deferredPrompt) {
                         deferredPrompt.prompt();
                         const { outcome } = await deferredPrompt.userChoice;
@@ -341,6 +329,18 @@
             userDropdown.classList.add('hidden');
             if (await requireUser()) {
                 goTo('archive');
+            }
+        });
+
+        // Push-Opt-In manuell über das Dropdown aufrufen
+        document.getElementById('dropdown-enable-push').addEventListener('click', () => {
+            userDropdown.classList.add('hidden');
+            if (window.OneSignalDeferred) {
+                OneSignalDeferred.push(async function(OneSignal) {
+                    await OneSignal.Slidedown.promptPush();
+                });
+            } else {
+                showModal({ title: "Hinweis", message: "Push-Dienst lädt noch. Bitte versuche es gleich nochmal." });
             }
         });
 
@@ -568,7 +568,7 @@
                         const fullItem = { id: change.doc.id, ...data };
                         if (data.sellerName && data.sellerName.toLowerCase() !== currentUser.toLowerCase()) {
                             const thumb = (data.images && data.images.length > 0) ? data.images[0] : null;
-                            showToast("Neuer Artikel! ??", `${data.sellerName} bietet jetzt "${data.name}" an.`, thumb, fullItem);
+                            showToast("Neuer Artikel! 🎉", `${data.sellerName} bietet jetzt "${data.name}" an.`, thumb, fullItem);
                         }
                     }
                 });
@@ -614,7 +614,7 @@
                 isAdmin = !isAdmin;
                 clickCount = 0;
                 btnAdminView.classList.toggle('hidden', !isAdmin);
-                showModal({ title: "System", message: isAdmin ? "Admin-Modus aktiviert ??" : "Admin-Modus deaktiviert" });
+                showModal({ title: "System", message: isAdmin ? "Admin-Modus aktiviert 👑" : "Admin-Modus deaktiviert" });
                 if(!isAdmin) {
                     homeAdminSelected.clear();
                     if(currentView === 'admin' || currentView === 'master-archive') goTo('home');
@@ -976,9 +976,9 @@
                                 app_id: "d995586b-0704-4b86-b60a-ccb14de93095",
                                 included_segments: ["Subscribed Users"],
                                 headings: { en: "Neuer Floh-Artikel! 🎉", de: "Neuer Floh-Artikel! 🎉" },
-                                contents: { 
-                                    en: `${currentUser} hat "${wizardData.name.trim()}" eingestellt.`, 
-                                    de: `${currentUser} hat "${wizardData.name.trim()}" eingestellt.` 
+                                contents: {
+                                    en: `${currentUser} hat "${wizardData.name.trim()}" eingestellt.`,
+                                    de: `${currentUser} hat "${wizardData.name.trim()}" eingestellt.`
                                 },
                                 url: window.location.origin + window.location.pathname + "?item=" + newDocRef.id
                             })
@@ -994,8 +994,8 @@
                         }
 
                         goTo('detail');
-                        showModal({ 
-                            title: "Boom! Online! 🎉", 
+                        showModal({
+                            title: "Boom! Online! 🎉",
                             message: "Dein Artikel ist jetzt im Floh. Willst du direkt den Link in die Familiengruppe hauen?",
                             shareItem: selectedItem,
                             hideCancel: true
@@ -1274,7 +1274,7 @@
             const vCat = editItem ? editItem.category : baseCategories[0];
             const vPrice = editItem && editItem.price !== null ? editItem.price : '';
 
-            const btnClass = editItem 
+            const btnClass = editItem
                 ? "w-full bg-teal-700 text-white font-bold rounded-xl py-3.5 shadow-md hover:bg-teal-800 transition flex justify-center items-center gap-2"
                 : "w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black rounded-xl py-4 shadow-xl hover:shadow-teal-500/40 hover:scale-105 transform transition-all flex justify-center items-center gap-3 text-lg animate-[pulse_2s_ease-in-out_infinite]";
 
@@ -1321,7 +1321,7 @@
                     </div>
 
                     <button type="submit" id="btn-save" class="${btnClass}">
-                        <i class="fa-solid ${editItem ? 'fa-floppy-disk' : 'fa-rocket'}"></i> 
+                        <i class="fa-solid ${editItem ? 'fa-floppy-disk' : 'fa-rocket'}"></i>
                         <span id="btn-save-text">${editItem ? 'Änderungen speichern' : 'Ab in den Floh damit!'}</span>
                     </button>
                 </form>
@@ -1403,7 +1403,7 @@
                         dataObj.buyerName = null;
                         dataObj.timestamp = Date.now();
                         const newDocRef = await addDoc(collection(db, collPath), dataObj);
-                        
+
                         // Push-Nachricht senden
                         fetch("https://onesignal.com/api/v1/notifications", {
                             method: "POST",
@@ -1415,9 +1415,9 @@
                                 app_id: "d995586b-0704-4b86-b60a-ccb14de93095",
                                 included_segments: ["Subscribed Users"],
                                 headings: { en: "Neuer Floh-Artikel! 🎉", de: "Neuer Floh-Artikel! 🎉" },
-                                contents: { 
-                                    en: `${currentUser} hat "${dataObj.name}" eingestellt.`, 
-                                    de: `${currentUser} hat "${dataObj.name}" eingestellt.` 
+                                contents: {
+                                    en: `${currentUser} hat "${dataObj.name}" eingestellt.`,
+                                    de: `${currentUser} hat "${dataObj.name}" eingestellt.`
                                 },
                                 url: window.location.origin + window.location.pathname + "?item=" + newDocRef.id
                             })
@@ -1433,8 +1433,8 @@
                         }
 
                         goTo('detail');
-                        showModal({ 
-                            title: "Boom! Online! 🎉", 
+                        showModal({
+                            title: "Boom! Online! 🎉",
                             message: "Dein Artikel ist jetzt im Floh. Willst du direkt den Link in die Familiengruppe hauen?",
                             shareItem: selectedItem,
                             hideCancel: true
@@ -1827,3 +1827,4 @@
     </script>
 </body>
 </html>
+```eof
