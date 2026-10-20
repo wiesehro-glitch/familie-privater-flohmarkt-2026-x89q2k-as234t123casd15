@@ -17,16 +17,32 @@
     <!-- SAUBERE MANIFEST EINBINDUNG -->
     <link rel="manifest" href="manifest.json">
 
-    <!-- OneSignal: Initialisierung und Fehlerstatus -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <!-- OneSignal: erweiterte Diagnose, ohne Firebase-Abhaengigkeit -->
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       window.oneSignalInstance = null;
       window.oneSignalReady = false;
       window.oneSignalError = null;
       window.oneSignalInitStarted = false;
+      window.flohPushDiagnostics = { phase: 'Warte auf SDK', startedAt: Date.now(), events: [] };
+      window.flohPushLog = function(stage, detail) {
+        const d = window.flohPushDiagnostics;
+        d.phase = stage;
+        d.events.push(new Date().toLocaleTimeString('de-DE') + ' ' + stage + (detail ? ': ' + detail : ''));
+        if (d.events.length > 15) d.events.shift();
+        console.info('[Floh Push]', stage, detail || '');
+      };
+      window.addEventListener('error', function(e) {
+        const src = e.filename || (e.target && e.target.src) || '';
+        if (/onesignal/i.test(src)) window.flohPushLog('SDK-Skriptfehler', (e.message || 'Ressource nicht geladen') + ' ' + src);
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        const reason = String(e.reason?.message || e.reason || 'unbekannt');
+        if (/onesignal|push|service.?worker|subscribe|permission/i.test(reason)) window.flohPushLog('Promise-Fehler', reason);
+      });
       OneSignalDeferred.push(async function(OneSignal) {
         window.oneSignalInitStarted = true;
+        window.flohPushLog('OneSignal.init gestartet');
         try {
           await OneSignal.init({
             appId: "d995586b-0704-4b86-b60a-ccb14de93095",
@@ -37,14 +53,19 @@
           });
           window.oneSignalInstance = OneSignal;
           window.oneSignalReady = true;
+          window.flohPushLog('Initialisierung erfolgreich');
           window.dispatchEvent(new Event('flohpushedready'));
         } catch (err) {
-          window.oneSignalError = String(err?.message || err);
+          window.oneSignalError = String(err?.stack || err?.message || err);
+          window.flohPushLog('Initialisierung fehlgeschlagen', window.oneSignalError);
           console.error('OneSignal Initialisierung:', err);
           window.dispatchEvent(new Event('flohpushedready'));
         }
       });
     </script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer
+      onload="window.flohPushLog('SDK-Loader geladen')"
+      onerror="window.flohPushLog('SDK-Loader blockiert oder fehlgeschlagen')"></script>
 
     <script>window.tailwind = window.tailwind || {}; window.tailwind.config = { darkMode: "class" };</script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -220,23 +241,50 @@
       })();
     </script>
 
-    <!-- Unabhängiger Push-Schalter: funktioniert auch bei Fehlern im Firebase-Modul -->
+    <!-- Push-Schalter und ausfuehrliche Android-Diagnose -->
     <script>
       (function () {
         const row = document.getElementById('push-toggle-row');
         const checkbox = document.getElementById('push-toggle-checkbox');
         if (!row || !checkbox) return;
         let busy = false;
-        const status = () => {
-          checkbox.checked = Boolean(window.oneSignalInstance?.User?.PushSubscription?.optedIn);
-        };
+        const status = () => { checkbox.checked = Boolean(window.oneSignalInstance?.User?.PushSubscription?.optedIn); };
         const explain = (message) => window.alert(message);
         window.addEventListener('flohpushedready', () => {
           status();
-          try {
-            window.oneSignalInstance?.User?.PushSubscription?.addEventListener('change', status);
-          } catch (err) { console.warn('Push Status Listener:', err); }
+          try { window.oneSignalInstance?.User?.PushSubscription?.addEventListener('change', status); }
+          catch (err) { console.warn('Push Status Listener:', err); }
         });
+        async function diagnose() {
+          const lines = [];
+          const d = window.flohPushDiagnostics || {};
+          lines.push('Phase: ' + (d.phase || 'unbekannt'));
+          lines.push('SDK-Callback: ' + (window.oneSignalInitStarted ? 'gestartet' : 'nicht gestartet'));
+          lines.push('Init fertig: ' + (window.oneSignalReady ? 'ja' : 'nein'));
+          lines.push('Wartezeit: ' + Math.round((Date.now() - (d.startedAt || Date.now())) / 1000) + ' s');
+          lines.push('HTTPS: ' + (window.isSecureContext ? 'ja' : 'nein'));
+          lines.push('Browser-Berechtigung: ' + (('Notification' in window) ? Notification.permission : 'nicht unterstützt'));
+          if (window.oneSignalError) lines.push('Init-Fehler: ' + window.oneSignalError.slice(0, 700));
+          try {
+            const registrations = await Promise.race([
+              navigator.serviceWorker.getRegistrations(),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout nach 4 Sekunden')), 4000))
+            ]);
+            const ours = registrations.filter(r => r.scope.includes('/familie-privater-flohmarkt-2026-'));
+            if (!ours.length) lines.push('Service Worker: KEINE Registrierung im Floh-Pfad');
+            ours.forEach((r, i) => lines.push('Worker ' + (i + 1) + ': ' + (r.active?.scriptURL || r.installing?.scriptURL || r.waiting?.scriptURL || 'kein aktiver Worker') + ' | Scope: ' + r.scope));
+          } catch (e) { lines.push('Worker-Abfrage: ' + (e.message || e)); }
+          try {
+            const response = await Promise.race([
+              fetch(new URL('OneSignalSDKWorker.js', document.baseURI), { cache: 'no-store' }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout nach 4 Sekunden')), 4000))
+            ]);
+            lines.push('Worker-Datei HTTP: ' + response.status);
+          } catch (e) { lines.push('Worker-Datei: ' + (e.message || e)); }
+          lines.push('Seite: ' + location.pathname);
+          if (d.events?.length) lines.push('Ablauf:\n' + d.events.slice(-7).join('\n'));
+          return lines.join('\n');
+        }
         row.addEventListener('click', async (event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -246,37 +294,24 @@
             if (!window.isSecureContext) return explain('Push benötigt HTTPS.');
             if (!('Notification' in window)) return explain('Dieser Browser unterstützt keine Benachrichtigungen.');
             if (!('serviceWorker' in navigator)) return explain('Dieser Browser unterstützt keine Service Worker.');
-            if (Notification.permission === 'denied') return explain('Benachrichtigungen sind blockiert. Bitte in Android unter Einstellungen > Apps > Chrome (bzw. deine Floh-App) > Benachrichtigungen erlauben.');
-            if (window.oneSignalError) return explain('OneSignal konnte nicht starten: ' + window.oneSignalError);
-            const os = window.oneSignalInstance;
-            if (!window.oneSignalReady || !os) {
-              const workerUrl = new URL('OneSignalSDKWorker.js', document.baseURI);
-              let workerInfo = '';
-              try {
-                const response = await fetch(workerUrl, { cache: 'no-store' });
-                const contentType = response.headers.get('content-type') || 'unbekannt';
-                workerInfo = 'Worker HTTP ' + response.status + ' (' + contentType + ')';
-              } catch (err) { workerInfo = 'Worker nicht abrufbar: ' + (err?.message || err); }
-              const sdkScript = [...document.scripts].find(s => s.src.includes('OneSignalSDK.page.js'));
-              const initState = window.oneSignalInitStarted ? 'Initialisierung gestartet, aber nicht abgeschlossen' : 'SDK-Initialisierung wurde nicht gestartet';
-              return explain('OneSignal ist nicht bereit.\n' + initState + '\n' + workerInfo + '\nSeiten-URL: ' + location.pathname + '\nPrüfe außerdem die OneSignal-Web-Konfiguration auf die korrekte GitHub-Pages-URL.');
+            if (Notification.permission === 'denied') return explain('Benachrichtigungen sind blockiert. Bitte in Android die Benachrichtigungen für Chrome bzw. Floh erlauben.');
+            if (window.oneSignalError || !window.oneSignalReady || !window.oneSignalInstance) {
+              return explain('OneSignal-Diagnose:\n\n' + await diagnose());
             }
+            const os = window.oneSignalInstance;
             if (os.User.PushSubscription.optedIn) {
               await os.User.PushSubscription.optOut();
               explain('Mitteilungen deaktiviert.');
             } else {
               await os.Notifications.requestPermission();
-              if (Notification.permission !== 'granted') return explain('Benachrichtigungen wurden nicht erlaubt: ' + Notification.permission);
+              if (Notification.permission !== 'granted') return explain('Benachrichtigungen nicht erlaubt: ' + Notification.permission);
               await os.User.PushSubscription.optIn();
-              explain(os.User.PushSubscription.optedIn ? 'Mitteilungen sind aktiviert!' : 'Berechtigung erteilt, aber das Push-Abo ist noch nicht aktiv. Bitte OneSignal-Konfiguration prüfen.');
+              explain(os.User.PushSubscription.optedIn ? 'Mitteilungen sind aktiviert!' : 'Berechtigung vorhanden, aber Abo noch nicht aktiv.\n\n' + await diagnose());
             }
           } catch (err) {
             console.error('Push Schalter:', err);
-            explain('Push-Fehler: ' + (err?.message || String(err)));
-          } finally {
-            busy = false;
-            status();
-          }
+            explain('Push-Fehler: ' + (err?.message || String(err)) + '\n\n' + await diagnose());
+          } finally { busy = false; status(); }
         });
         status();
       })();
