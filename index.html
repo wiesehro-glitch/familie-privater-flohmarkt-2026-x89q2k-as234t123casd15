@@ -24,12 +24,14 @@
       window.oneSignalInstance = null;
       window.oneSignalReady = false;
       window.oneSignalError = null;
+      window.oneSignalInitStarted = false;
       OneSignalDeferred.push(async function(OneSignal) {
+        window.oneSignalInitStarted = true;
         try {
           await OneSignal.init({
             appId: "d995586b-0704-4b86-b60a-ccb14de93095",
             safari_web_id: "web.onesignal.auto.2c53d929-118c-4db5-ba77-650d97dbe49e",
-            serviceWorkerPath: "OneSignalSDKWorker.js",
+            serviceWorkerPath: "/familie-privater-flohmarkt-2026-x89q2k-as234t123casd15/OneSignalSDKWorker.js",
             serviceWorkerParam: { scope: "/familie-privater-flohmarkt-2026-x89q2k-as234t123casd15/" },
             notifyButton: { enable: false }
           });
@@ -44,6 +46,7 @@
       });
     </script>
 
+    <script>window.tailwind = window.tailwind || {}; window.tailwind.config = { darkMode: "class" };</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -59,6 +62,23 @@
         .snap-x { scroll-snap-type: x mandatory; }
         .snap-center { scroll-snap-align: center; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        /* Dark mode: bewusst nur neutrale Flaechen/Textfarben umfaerben. */
+        html.dark { color-scheme: dark; }
+        html.dark body, html.dark #main-content { background: #0b1417 !important; color: #e4edef !important; }
+        html.dark .bg-white, html.dark .bg-white\/95 { background-color: #18272b !important; }
+        html.dark .bg-teal-50, html.dark .bg-teal-50\/30, html.dark .bg-teal-50\/50,
+        html.dark .bg-gray-50, html.dark .bg-gray-100 { background-color: #223438 !important; }
+        html.dark .bg-teal-100, html.dark .bg-blue-50 { background-color: #294347 !important; }
+        html.dark .text-gray-800, html.dark .text-gray-700, html.dark .text-gray-600,
+        html.dark .text-gray-900, html.dark .text-teal-900 { color: #e4edef !important; }
+        html.dark .text-gray-500, html.dark .text-gray-400 { color: #b0c1c5 !important; }
+        html.dark .text-teal-700, html.dark .text-teal-800 { color: #8ce2d2 !important; }
+        html.dark .border-gray-100, html.dark .border-gray-200, html.dark .border-teal-100,
+        html.dark .border-teal-50 { border-color: #365056 !important; }
+        html.dark input:not([type=checkbox]):not([type=file]), html.dark textarea,
+        html.dark select { background-color: #17272b !important; color: #f0f6f7 !important; border-color: #3a555b !important; }
+        html.dark input::placeholder, html.dark textarea::placeholder { color: #9baeb2 !important; }
+        html.dark .hover\:bg-teal-50:hover, html.dark .hover\:bg-gray-100:hover { background-color: #30494d !important; }
     </style>
 </head>
 <body class="bg-teal-50 text-gray-800">
@@ -130,6 +150,15 @@
                             </label>
                         </div>
 
+                        <!-- Nutzer-Einstellung: Dark Mode -->
+                        <div id="dark-toggle-row" class="w-full px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center justify-between border-b border-gray-100 cursor-pointer" role="button" tabindex="0" aria-label="Dark Mode umschalten">
+                            <span class="flex items-center gap-2.5 font-medium text-gray-700"><i class="fa-solid fa-moon w-4 text-teal-700 text-center"></i> Dark Mode</span>
+                            <label class="relative inline-flex items-center cursor-pointer pointer-events-none">
+                                <input type="checkbox" id="dark-toggle-checkbox" class="sr-only peer" tabindex="-1">
+                                <div class="w-9 h-5 bg-gray-300 rounded-full relative peer-checked:bg-teal-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+
                         <button id="dropdown-change-user" class="w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5">
                             <i class="fa-solid fa-user-pen w-4 text-teal-700 text-center"></i> Benutzer wechseln
                         </button>
@@ -171,6 +200,26 @@
         </form>
     </div>
 
+    <script>
+      (function () {
+        const storageKey = 'flohDarkMode';
+        const row = document.getElementById('dark-toggle-row');
+        const checkbox = document.getElementById('dark-toggle-checkbox');
+        const meta = document.querySelector('meta[name="theme-color"]');
+        function apply(dark) {
+          document.documentElement.classList.toggle('dark', dark);
+          checkbox.checked = dark;
+          if (meta) meta.content = dark ? '#0b1417' : '#115e59';
+          try { localStorage.setItem(storageKey, dark ? 'on' : 'off'); } catch (_) {}
+        }
+        let saved = null;
+        try { saved = localStorage.getItem(storageKey); } catch (_) {}
+        apply(saved === 'on' || (saved === null && matchMedia('(prefers-color-scheme: dark)').matches));
+        row.addEventListener('click', e => { e.stopPropagation(); apply(!checkbox.checked); });
+        row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); apply(!checkbox.checked); } });
+      })();
+    </script>
+
     <!-- Unabhängiger Push-Schalter: funktioniert auch bei Fehlern im Firebase-Modul -->
     <script>
       (function () {
@@ -200,7 +249,18 @@
             if (Notification.permission === 'denied') return explain('Benachrichtigungen sind blockiert. Bitte in Android unter Einstellungen > Apps > Chrome (bzw. deine Floh-App) > Benachrichtigungen erlauben.');
             if (window.oneSignalError) return explain('OneSignal konnte nicht starten: ' + window.oneSignalError);
             const os = window.oneSignalInstance;
-            if (!window.oneSignalReady || !os) return explain('OneSignal ist noch nicht bereit. Bitte Seite neu laden. Wenn dies bleibt: SDK oder Service Worker konnte nicht geladen werden.');
+            if (!window.oneSignalReady || !os) {
+              const workerUrl = new URL('OneSignalSDKWorker.js', document.baseURI);
+              let workerInfo = '';
+              try {
+                const response = await fetch(workerUrl, { cache: 'no-store' });
+                const contentType = response.headers.get('content-type') || 'unbekannt';
+                workerInfo = 'Worker HTTP ' + response.status + ' (' + contentType + ')';
+              } catch (err) { workerInfo = 'Worker nicht abrufbar: ' + (err?.message || err); }
+              const sdkScript = [...document.scripts].find(s => s.src.includes('OneSignalSDK.page.js'));
+              const initState = window.oneSignalInitStarted ? 'Initialisierung gestartet, aber nicht abgeschlossen' : 'SDK-Initialisierung wurde nicht gestartet';
+              return explain('OneSignal ist nicht bereit.\n' + initState + '\n' + workerInfo + '\nSeiten-URL: ' + location.pathname + '\nPrüfe außerdem die OneSignal-Web-Konfiguration auf die korrekte GitHub-Pages-URL.');
+            }
             if (os.User.PushSubscription.optedIn) {
               await os.User.PushSubscription.optOut();
               explain('Mitteilungen deaktiviert.');
