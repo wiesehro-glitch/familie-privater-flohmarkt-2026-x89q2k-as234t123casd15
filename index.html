@@ -6,7 +6,7 @@
     <title>Floh</title>
 
     <!-- PWA Meta Tags & Icons -->
-    <meta name="theme-color" content="#115e59">
+    <meta name="theme-color" content="#115e59"> <!-- Petrol Ton -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -22,13 +22,28 @@
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "d995586b-0704-4b86-b60a-ccb14de93095",
-          safari_web_id: "web.onesignal.auto.2c53d929-118c-4db5-ba77-650d97dbe49e",
-          notifyButton: {
-            enable: true,
-          },
-        });
+        try {
+            await OneSignal.init({
+              appId: "d995586b-0704-4b86-b60a-ccb14de93095",
+              safari_web_id: "web.onesignal.auto.2c53d929-118c-4db5-ba77-650d97dbe49e",
+              notifyButton: {
+                enable: false, // Standard Button ausschalten, wir nutzen den eigenen Toggle!
+              },
+            });
+            
+            // Toggle beim Laden richtig setzen
+            const toggle = document.getElementById('push-toggle');
+            if (toggle && OneSignal.User && OneSignal.User.PushSubscription) {
+                toggle.checked = OneSignal.User.PushSubscription.optedIn;
+            }
+
+            // Auf externe Änderungen reagieren
+            OneSignal.User.PushSubscription.addEventListener('change', (event) => {
+                if (toggle) toggle.checked = event.current.optedIn;
+            });
+        } catch(e) {
+            console.error("OneSignal Init Fehler:", e);
+        }
       });
     </script>
 
@@ -47,6 +62,10 @@
         .snap-x { scroll-snap-type: x mandatory; }
         .snap-center { scroll-snap-align: center; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        
+        /* CSS für den Push-Toggle */
+        #push-toggle:checked ~ .toggle-bg { background-color: #0f766e; }
+        #push-toggle:checked ~ .toggle-dot { transform: translateX(100%); }
     </style>
 </head>
 <body class="bg-teal-50 text-gray-800">
@@ -69,17 +88,25 @@
             <div id="header-logo" class="cursor-pointer select-none flex items-center shrink-0 ml-1 sm:ml-2 hover:opacity-90 transition-opacity">
                 <!-- Custom SVG Floh Logo -->
                 <svg viewBox="0 0 85 42" height="24" class="text-white fill-current overflow-visible" style="font-variant-ligatures: none;">
+                   <!-- F -->
                    <text x="0" y="32" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="34" fill="white">F</text>
+                   <!-- l: Minimal kleiner gemacht, damit es exakt so hoch ist wie das große F -->
                    <text x="21" y="32" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="32" fill="white">l</text>
+
                    <g transform="translate(31, 4)">
+                       <!-- O-Body -->
                        <circle cx="12" cy="19" r="8.5" fill="none" stroke="white" stroke-width="5"/>
+                       <!-- Antennae -->
                        <path d="M 7 9 Q 3 2 1 5" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
                        <circle cx="1" cy="5" r="1.5" fill="white" />
                        <path d="M 17 9 Q 21 2 23 5" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
                        <circle cx="23" cy="5" r="1.5" fill="white" />
+                       <!-- Bottom waves -->
                        <path d="M 6 33 Q 12 37 18 33" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
                        <path d="M 9 38 Q 12 40 15 38" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
                    </g>
+
+                   <!-- h: Exakt 2 Pixel nach rechts verschoben -->
                    <text x="56" y="32" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="34" fill="white">h</text>
                 </svg>
             </div>
@@ -93,13 +120,26 @@
                     <div id="btn-user-profile" class="text-xs sm:text-sm font-bold bg-teal-900 px-3 py-1 sm:py-1.5 rounded-xl cursor-pointer hover:bg-teal-950 transition flex items-center gap-1.5 border border-teal-700 shadow-inner whitespace-nowrap" title="Menü">
                         <i class="fa-solid fa-user-circle text-base text-teal-300"></i> <span id="header-user-name" class="max-w-[70px] sm:max-w-[100px] truncate">Gast</span>
                     </div>
+                    <!-- Dropdown öffnet sich jetzt nach unten -->
                     <div id="user-dropdown" class="hidden absolute right-0 top-full mt-3 w-52 bg-white rounded-xl shadow-xl border border-teal-100 py-2 z-[60] text-gray-800 origin-top-right">
                         <button id="dropdown-install-app" class="hidden w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5 font-bold text-teal-700 border-b border-gray-100">
                             <i class="fa-solid fa-download w-4 text-center"></i> App installieren
                         </button>
-                        <button id="dropdown-enable-push" class="w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5 border-b border-gray-100">
-                            <i class="fa-solid fa-bell w-4 text-teal-700 text-center"></i> Benachrichtigungen an
-                        </button>
+                        
+                        <!-- NEUER PUSH SLIDER -->
+                        <div id="dropdown-push-container" class="w-full text-left px-4 py-2.5 hover:bg-teal-50 flex items-center justify-between border-b border-gray-100 cursor-pointer">
+                            <div class="flex items-center gap-2.5 text-sm">
+                                <i class="fa-solid fa-bell w-4 text-teal-700 text-center"></i> Mitteilungen
+                            </div>
+                            <label for="push-toggle" class="flex items-center cursor-pointer pointer-events-none">
+                                <div class="relative">
+                                    <input type="checkbox" id="push-toggle" class="sr-only pointer-events-auto">
+                                    <div class="toggle-bg block bg-gray-300 w-10 h-6 rounded-full transition-colors"></div>
+                                    <div class="toggle-dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform"></div>
+                                </div>
+                            </label>
+                        </div>
+
                         <button id="dropdown-change-user" class="w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5">
                             <i class="fa-solid fa-user-pen w-4 text-teal-700 text-center"></i> Benutzer wechseln
                         </button>
@@ -118,20 +158,23 @@
             </div>
         </header>
 
+        <!-- Main Content nimmt den restlichen Platz ein -->
         <main id="main-content" class="flex-1 overflow-y-auto relative bg-teal-50/30">
             <!-- Dynamischer Inhalt -->
         </main>
+
     </div>
 
     <!-- Modal Dialog -->
     <div id="modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-        <form id="modal-form" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all">
+        <form id="modal-form" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all flex flex-col">
             <h3 id="modal-title" class="text-xl font-bold mb-2 text-teal-900"></h3>
             <p id="modal-message" class="text-gray-600 mb-5 text-sm leading-relaxed"></p>
             <input id="modal-input" type="text" autocomplete="given-name" class="hidden w-full border-2 border-teal-100 rounded-xl p-3 mb-4 focus:ring-2 focus:ring-teal-600 outline-none transition bg-teal-50">
-            <div class="flex flex-wrap items-center justify-between w-full mt-4 gap-2">
-                <button type="button" id="modal-share" class="hidden px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-xl font-bold shadow-md hover:scale-105 transform transition text-sm flex items-center gap-2"><i class="fa-solid fa-share-nodes"></i> Zeig's der Familie</button>
-                <div class="flex flex-1 justify-end gap-2">
+            
+            <div class="flex items-center gap-3 w-full mt-auto pt-2">
+                <button type="button" id="modal-share" class="hidden px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-xl font-bold shadow-md hover:scale-105 transform transition text-sm flex items-center gap-2 mr-auto"><i class="fa-solid fa-share-nodes"></i> Zeig's der Familie</button>
+                <div class="flex justify-end gap-3 flex-1">
                     <button type="button" id="modal-cancel" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-xl font-medium transition text-sm">Abbrechen</button>
                     <button type="submit" id="modal-confirm" class="px-5 py-2 bg-teal-700 text-white rounded-xl hover:bg-teal-800 font-medium shadow-md transition text-sm">OK</button>
                 </div>
@@ -248,7 +291,6 @@
         });
 
         function setupPWA() {
-            // Nur PWA Install Prompt - Keine Service Worker Injection mehr, um OneSignal nicht zu blockieren!
             let deferredPrompt;
             const installBtn = document.getElementById('dropdown-install-app');
 
@@ -321,15 +363,30 @@
             }
         });
 
-        // Push-Opt-In manuell über das Dropdown aufrufen (Korrigiert für OneSignal v16)
-        document.getElementById('dropdown-enable-push').addEventListener('click', () => {
-            userDropdown.classList.add('hidden');
-            if (window.OneSignalDeferred) {
-                OneSignalDeferred.push(async function(OneSignal) {
+        // Verhindern, dass Dropdown sich schließt, wenn man auf den Push-Toggle klickt
+        document.getElementById('dropdown-push-container').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Push-Slider Logic
+        document.getElementById('push-toggle').addEventListener('change', async (e) => {
+            if (!window.OneSignal || !window.OneSignal.Notifications) {
+                e.preventDefault();
+                e.target.checked = !e.target.checked; // Zurücksetzen
+                showModal({ title: "Warten", message: "Der Push-Dienst lädt noch. Bitte probiere es gleich nochmal." });
+                return;
+            }
+
+            try {
+                if (e.target.checked) {
                     await OneSignal.Notifications.requestPermission();
-                });
-            } else {
-                showModal({ title: "Hinweis", message: "Push-Dienst lädt noch. Bitte versuche es gleich nochmal." });
+                    OneSignal.User.PushSubscription.optIn();
+                } else {
+                    OneSignal.User.PushSubscription.optOut();
+                }
+            } catch (err) {
+                e.target.checked = !e.target.checked; // Zurücksetzen bei Fehler
+                showModal({ title: "Push Fehler", message: "Es gab ein Problem: " + (err.message || JSON.stringify(err)) });
             }
         });
 
@@ -954,7 +1011,7 @@
                             timestamp: Date.now()
                         });
 
-                        // Push-Nachricht direkt aus dem Frontend über OneSignal senden
+                        // Push-Nachricht senden mit direkter Fehlerausgabe
                         fetch("https://onesignal.com/api/v1/notifications", {
                             method: "POST",
                             headers: {
@@ -972,9 +1029,15 @@
                                 url: window.location.origin + window.location.pathname + "?item=" + newDocRef.id
                             })
                         })
-                        .then(res => res.json())
-                        .then(data => console.log("OneSignal Push-Ergebnis (Wizard):", data))
-                        .catch(err => console.error("Push-Fehler:", err));
+                        .then(async res => {
+                            const data = await res.json();
+                            if (data.errors && data.errors.length > 0) {
+                                showModal({ title: "Push Warnung", message: "Artikel gespeichert, aber Benachrichtigung gescheitert: " + JSON.stringify(data.errors) });
+                            }
+                        })
+                        .catch(err => {
+                            showModal({ title: "Netzwerkfehler", message: "Push konnte nicht gesendet werden: " + err.message });
+                        });
 
                         seenItems.push(newDocRef.id);
                         localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
@@ -993,7 +1056,7 @@
                             hideCancel: true
                         });
                     } catch (e) {
-                        showModal({ title: "Fehler", message: e.message });
+                        showModal({ title: "Datenbank Fehler", message: e.message });
                         btnNext.disabled = false;
                     }
                 }
@@ -1396,7 +1459,7 @@
                         dataObj.timestamp = Date.now();
                         const newDocRef = await addDoc(collection(db, collPath), dataObj);
 
-                        // Push-Nachricht senden
+                        // Push-Nachricht senden inkl. direktem Fehler-Feedback
                         fetch("https://onesignal.com/api/v1/notifications", {
                             method: "POST",
                             headers: {
@@ -1414,9 +1477,15 @@
                                 url: window.location.origin + window.location.pathname + "?item=" + newDocRef.id
                             })
                         })
-                        .then(res => res.json())
-                        .then(data => console.log("OneSignal Push-Ergebnis (Formular):", data))
-                        .catch(err => console.error("Push-Fehler:", err));
+                        .then(async res => {
+                            const data = await res.json();
+                            if (data.errors && data.errors.length > 0) {
+                                showModal({ title: "Push Warnung", message: "Artikel gespeichert, aber Benachrichtigung gescheitert: " + JSON.stringify(data.errors) });
+                            }
+                        })
+                        .catch(err => {
+                            showModal({ title: "Netzwerkfehler", message: "Push konnte nicht gesendet werden: " + err.message });
+                        });
 
                         seenItems.push(newDocRef.id);
                         localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
