@@ -17,22 +17,30 @@
     <!-- SAUBERE MANIFEST EINBINDUNG -->
     <link rel="manifest" href="manifest.json">
 
-    <!-- OneSignal SDK -->
+    <!-- OneSignal: Initialisierung und Fehlerstatus -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       window.oneSignalInstance = null;
+      window.oneSignalReady = false;
+      window.oneSignalError = null;
       OneSignalDeferred.push(async function(OneSignal) {
-        window.oneSignalInstance = OneSignal;
-        await OneSignal.init({
-          appId: "d995586b-0704-4b86-b60a-ccb14de93095",
-          safari_web_id: "web.onesignal.auto.2c53d929-118c-4db5-ba77-650d97dbe49e",
-          serviceWorkerPath: "OneSignalSDKWorker.js",
-          serviceWorkerParam: { scope: "/familie-privater-flohmarkt-2026-x89q2k-as234t123casd15/" },
-          notifyButton: {
-            enable: false,
-          },
-        });
+        try {
+          await OneSignal.init({
+            appId: "d995586b-0704-4b86-b60a-ccb14de93095",
+            safari_web_id: "web.onesignal.auto.2c53d929-118c-4db5-ba77-650d97dbe49e",
+            serviceWorkerPath: "OneSignalSDKWorker.js",
+            serviceWorkerParam: { scope: "/familie-privater-flohmarkt-2026-x89q2k-as234t123casd15/" },
+            notifyButton: { enable: false }
+          });
+          window.oneSignalInstance = OneSignal;
+          window.oneSignalReady = true;
+          window.dispatchEvent(new Event('flohpushedready'));
+        } catch (err) {
+          window.oneSignalError = String(err?.message || err);
+          console.error('OneSignal Initialisierung:', err);
+          window.dispatchEvent(new Event('flohpushedready'));
+        }
       });
     </script>
 
@@ -162,6 +170,57 @@
             </div>
         </form>
     </div>
+
+    <!-- Unabhängiger Push-Schalter: funktioniert auch bei Fehlern im Firebase-Modul -->
+    <script>
+      (function () {
+        const row = document.getElementById('push-toggle-row');
+        const checkbox = document.getElementById('push-toggle-checkbox');
+        if (!row || !checkbox) return;
+        let busy = false;
+        const status = () => {
+          checkbox.checked = Boolean(window.oneSignalInstance?.User?.PushSubscription?.optedIn);
+        };
+        const explain = (message) => window.alert(message);
+        window.addEventListener('flohpushedready', () => {
+          status();
+          try {
+            window.oneSignalInstance?.User?.PushSubscription?.addEventListener('change', status);
+          } catch (err) { console.warn('Push Status Listener:', err); }
+        });
+        row.addEventListener('click', async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (busy) return;
+          busy = true;
+          try {
+            if (!window.isSecureContext) return explain('Push benötigt HTTPS.');
+            if (!('Notification' in window)) return explain('Dieser Browser unterstützt keine Benachrichtigungen.');
+            if (!('serviceWorker' in navigator)) return explain('Dieser Browser unterstützt keine Service Worker.');
+            if (Notification.permission === 'denied') return explain('Benachrichtigungen sind blockiert. Bitte in Android unter Einstellungen > Apps > Chrome (bzw. deine Floh-App) > Benachrichtigungen erlauben.');
+            if (window.oneSignalError) return explain('OneSignal konnte nicht starten: ' + window.oneSignalError);
+            const os = window.oneSignalInstance;
+            if (!window.oneSignalReady || !os) return explain('OneSignal ist noch nicht bereit. Bitte Seite neu laden. Wenn dies bleibt: SDK oder Service Worker konnte nicht geladen werden.');
+            if (os.User.PushSubscription.optedIn) {
+              await os.User.PushSubscription.optOut();
+              explain('Mitteilungen deaktiviert.');
+            } else {
+              await os.Notifications.requestPermission();
+              if (Notification.permission !== 'granted') return explain('Benachrichtigungen wurden nicht erlaubt: ' + Notification.permission);
+              await os.User.PushSubscription.optIn();
+              explain(os.User.PushSubscription.optedIn ? 'Mitteilungen sind aktiviert!' : 'Berechtigung erteilt, aber das Push-Abo ist noch nicht aktiv. Bitte OneSignal-Konfiguration prüfen.');
+            }
+          } catch (err) {
+            console.error('Push Schalter:', err);
+            explain('Push-Fehler: ' + (err?.message || String(err)));
+          } finally {
+            busy = false;
+            status();
+          }
+        });
+        status();
+      })();
+    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -296,51 +355,6 @@
             }
         }
         setupPWA();
-
-        // Push-Slider Logik direkt im Dropdown-Menü
-        const pushToggleRow = document.getElementById('push-toggle-row');
-        const pushCheckbox = document.getElementById('push-toggle-checkbox');
-
-        // Den tatsächlichen OneSignal-Abo-Status anzeigen (nicht nur die Browser-Berechtigung).
-        function refreshPushStatus() {
-            const os = window.oneSignalInstance;
-            pushCheckbox.checked = Boolean(os?.User?.PushSubscription?.optedIn);
-        }
-        window.OneSignalDeferred = window.OneSignalDeferred || [];
-        window.OneSignalDeferred.push(async (OneSignal) => {
-            refreshPushStatus();
-            OneSignal.User.PushSubscription.addEventListener('change', refreshPushStatus);
-        });
-
-        pushToggleRow.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const os = window.oneSignalInstance;
-            if (!os) {
-                showModal({ title: "Warten", message: "Der Push-Dienst wird noch geladen. Bitte gleich erneut versuchen." });
-                return;
-            }
-            try {
-                if (os.User.PushSubscription.optedIn) {
-                    await os.User.PushSubscription.optOut();
-                    showModal({ title: "Mitteilungen", message: "Mitteilungen wurden deaktiviert." });
-                } else {
-                    if (Notification.permission === 'denied') {
-                        showModal({ title: "Hinweis", message: "Mitteilungen sind im Browser blockiert. Bitte in den Website-Einstellungen erlauben." });
-                        return;
-                    }
-                    await os.Notifications.requestPermission();
-                    if (Notification.permission === 'granted') {
-                        await os.User.PushSubscription.optIn();
-                    }
-                    showModal({ title: os.User.PushSubscription.optedIn ? "Super! 🎉" : "Hinweis", message: os.User.PushSubscription.optedIn ? "Mitteilungen sind aktiviert." : "Push konnte nicht aktiviert werden. Bitte Browser-Einstellungen prüfen." });
-                }
-            } catch (err) {
-                showModal({ title: "Fehler", message: "Push-Fehler: " + err.message });
-            } finally {
-                refreshPushStatus();
-            }
-        });
 
         function initSession() {
             if (initialItemId) {
