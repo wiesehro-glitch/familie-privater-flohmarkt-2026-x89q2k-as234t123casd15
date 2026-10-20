@@ -4,25 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Floh</title>
-    
+
     <!-- PWA Meta Tags & Icons -->
     <meta name="theme-color" content="#115e59"> <!-- Petrol Ton -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
+
     <!-- Inline Favicon & Apple Touch Icon (Vektor) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f766e'/%3E%3Cg transform='translate(20, 10)' fill='none' stroke='white'%3E%3Ccircle cx='12' cy='19' r='8.5' stroke-width='5'/%3E%3Cpath d='M 7 9 Q 3 2 1 5' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='1' cy='5' r='1.5' fill='white' stroke='none'/%3E%3Cpath d='M 17 9 Q 21 2 23 5' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='23' cy='5' r='1.5' fill='white' stroke='none'/%3E%3Cpath d='M 6 33 Q 12 37 18 33' stroke-width='2.5' stroke-linecap='round'/%3E%3Cpath d='M 9 38 Q 12 40 15 38' stroke-width='2.5' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f766e'/%3E%3Cg transform='translate(20, 10)' fill='none' stroke='white'%3E%3Ccircle cx='12' cy='19' r='8.5' stroke-width='5'/%3E%3Cpath d='M 7 9 Q 3 2 1 5' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='1' cy='5' r='1.5' fill='white' stroke='none'/%3E%3Cpath d='M 17 9 Q 21 2 23 5' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='23' cy='5' r='1.5' fill='white' stroke='none'/%3E%3Cpath d='M 6 33 Q 12 37 18 33' stroke-width='2.5' stroke-linecap='round'/%3E%3Cpath d='M 9 38 Q 12 40 15 38' stroke-width='2.5' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E">
-    
+
     <!-- SAUBERE MANIFEST EINBINDUNG -->
     <link rel="manifest" href="manifest.json">
-    
+
+    <!-- OneSignal SDK -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "d995586b-0704-4b86-b60a-ccb14de93095",
+          safari_web_id: "web.onesignal.auto.2c53d929-118c-4db5-ba77-650d97dbe49e",
+          notifyButton: {
+            enable: true,
+          },
+        });
+      });
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Konfetti Skript -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    
+
     <style>
         body, html { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; width: 100%; height: 100%; margin: 0; padding: 0; }
         .hide-scroll::-webkit-scrollbar { display: none; }
@@ -58,7 +73,7 @@
                    <text x="0" y="32" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="34" fill="white">F</text>
                    <!-- l: Minimal kleiner gemacht, damit es exakt so hoch ist wie das große F -->
                    <text x="21" y="32" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="32" fill="white">l</text>
-                   
+
                    <g transform="translate(31, 4)">
                        <!-- O-Body -->
                        <circle cx="12" cy="19" r="8.5" fill="none" stroke="white" stroke-width="5"/>
@@ -71,17 +86,17 @@
                        <path d="M 6 33 Q 12 37 18 33" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
                        <path d="M 9 38 Q 12 40 15 38" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
                    </g>
-                   
+
                    <!-- h: Exakt 2 Pixel nach rechts verschoben -->
                    <text x="56" y="32" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="34" fill="white">h</text>
                 </svg>
             </div>
-            
+
             <div class="flex items-center shrink-0 gap-2 sm:gap-3 mr-1">
                 <button id="btn-admin-view" class="hidden text-teal-200 hover:text-white transition" title="Admin Dashboard">
                     <i class="fa-solid fa-crown text-lg"></i>
                 </button>
-                
+
                 <div class="relative">
                     <div id="btn-user-profile" class="text-xs sm:text-sm font-bold bg-teal-900 px-3 py-1 sm:py-1.5 rounded-xl cursor-pointer hover:bg-teal-950 transition flex items-center gap-1.5 border border-teal-700 shadow-inner whitespace-nowrap" title="Menü">
                         <i class="fa-solid fa-user-circle text-base text-teal-300"></i> <span id="header-user-name" class="max-w-[70px] sm:max-w-[100px] truncate">Gast</span>
@@ -122,9 +137,12 @@
             <h3 id="modal-title" class="text-xl font-bold mb-2 text-teal-900"></h3>
             <p id="modal-message" class="text-gray-600 mb-5 text-sm leading-relaxed"></p>
             <input id="modal-input" type="text" autocomplete="given-name" class="hidden w-full border-2 border-teal-100 rounded-xl p-3 mb-4 focus:ring-2 focus:ring-teal-600 outline-none transition bg-teal-50">
-            <div class="flex justify-end gap-3 mt-2">
-                <button type="button" id="modal-cancel" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-xl font-medium transition text-sm">Abbrechen</button>
-                <button type="submit" id="modal-confirm" class="px-5 py-2 bg-teal-700 text-white rounded-xl hover:bg-teal-800 font-medium shadow-md transition text-sm">OK</button>
+            <div class="flex flex-wrap items-center justify-between w-full mt-4 gap-2">
+                <button type="button" id="modal-share" class="hidden px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-xl font-bold shadow-md hover:scale-105 transform transition text-sm flex items-center gap-2"><i class="fa-solid fa-share-nodes"></i> Zeig's der Familie</button>
+                <div class="flex flex-1 justify-end gap-2">
+                    <button type="button" id="modal-cancel" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-xl font-medium transition text-sm">Abbrechen</button>
+                    <button type="submit" id="modal-confirm" class="px-5 py-2 bg-teal-700 text-white rounded-xl hover:bg-teal-800 font-medium shadow-md transition text-sm">OK</button>
+                </div>
             </div>
         </form>
     </div>
@@ -155,18 +173,18 @@
         let currentFilter = 'Alle';
         let currentSearch = '';
         let currentSort = 'date-desc';
-        
+
         let currentView = 'home';
         let isAdmin = false;
         let selectedItem = null;
         let initialDataLoaded = false;
         let homeAdminSelected = new Set();
         let hasNavigated = false;
-        
+
         let currentUser = localStorage.getItem('familyBazarUser') || '';
         let wizardStep = 1;
         let wizardData = {};
-        
+
         let seenItems = JSON.parse(localStorage.getItem('fbSeenItems') || '[]');
 
         let lbImages = [];
@@ -184,7 +202,7 @@
             if(!lbImages || lbImages.length === 0) return;
             const lbImg = document.getElementById('lightbox-img');
             lbImg.src = lbImages[lbIndex];
-            
+
             const btnPrev = document.getElementById('lb-prev');
             const btnNext = document.getElementById('lb-next');
             const counter = document.getElementById('lb-counter');
@@ -225,15 +243,15 @@
         lbOverlay.addEventListener('touchstart', e => {
             lbTouchStartX = e.changedTouches[0].screenX;
         }, {passive: true});
-        
+
         lbOverlay.addEventListener('touchend', e => {
             const touchEndX = e.changedTouches[0].screenX;
             const diff = lbTouchStartX - touchEndX;
             if (Math.abs(diff) > 50) {
-                if (diff > 0) window.lbNext(); 
-                else window.lbPrev(); 
+                if (diff > 0) window.lbNext();
+                else window.lbPrev();
             } else if (e.target.id === 'lightbox-overlay') {
-                lbOverlay.classList.add('hidden'); 
+                lbOverlay.classList.add('hidden');
             }
         });
 
@@ -247,7 +265,7 @@
             `;
             const blob = new Blob([swCode], { type: 'application/javascript' });
             const swUrl = URL.createObjectURL(blob);
-            
+
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                     navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed: ', err));
@@ -256,7 +274,7 @@
 
             let deferredPrompt;
             const installBtn = document.getElementById('dropdown-install-app');
-            
+
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
@@ -282,8 +300,8 @@
         function initSession() {
             if (initialItemId) {
                 currentView = 'detail';
-                history.replaceState({ view: 'home' }, '', cleanUrl); 
-                history.pushState({ view: 'detail' }, '', cleanUrl);  
+                history.replaceState({ view: 'home' }, '', cleanUrl);
+                history.pushState({ view: 'detail' }, '', cleanUrl);
             } else {
                 history.replaceState({ view: 'home' }, '', cleanUrl);
             }
@@ -298,7 +316,7 @@
         const btnShowWizard = document.getElementById('btn-show-wizard');
         const logo = document.getElementById('header-logo');
         const btnAdminView = document.getElementById('btn-admin-view');
-        
+
         const modalOverlay = document.getElementById('modal-overlay');
         const modalForm = document.getElementById('modal-form');
         const modalTitle = document.getElementById('modal-title');
@@ -307,7 +325,7 @@
         const modalCancel = document.getElementById('modal-cancel');
         const btnUserProfile = document.getElementById('btn-user-profile');
         const userDropdown = document.getElementById('user-dropdown');
-        
+
         btnUserProfile.addEventListener('click', (e) => {
             e.stopPropagation();
             userDropdown.classList.toggle('hidden');
@@ -333,12 +351,12 @@
 
         function goTo(view) {
             if (currentView === view) return;
-            hasNavigated = true; 
+            hasNavigated = true;
             currentView = view;
             history.pushState({ view: view }, '');
-            
-            if (view !== 'home') homeAdminSelected.clear(); 
-            
+
+            if (view !== 'home') homeAdminSelected.clear();
+
             renderCurrentView();
         }
 
@@ -369,7 +387,7 @@
         function showToast(title, message, imageSrc, targetItem = null) {
             const toast = document.createElement('div');
             toast.className = 'bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border-l-4 border-teal-500 p-4 flex items-center gap-3 transform transition-all duration-500 -translate-y-full opacity-0 pointer-events-auto cursor-pointer max-w-sm mx-auto w-full';
-            
+
             toast.innerHTML = `
                 ${imageSrc ? `<img src="${imageSrc}" class="w-12 h-12 rounded-xl object-cover shadow-sm">` : `<div class="w-12 h-12 rounded-xl bg-teal-100 text-teal-500 flex items-center justify-center text-xl"><i class="fa-solid fa-gift"></i></div>`}
                 <div class="flex-1">
@@ -378,8 +396,8 @@
                 </div>
             `;
 
-            toast.onclick = () => { 
-                toast.remove(); 
+            toast.onclick = () => {
+                toast.remove();
                 if (targetItem) {
                     selectedItem = targetItem;
                     if (!seenItems.includes(targetItem.id)) {
@@ -408,7 +426,28 @@
             return new Promise((resolve) => {
                 modalTitle.textContent = options.title || 'Hinweis';
                 modalMessage.textContent = options.message || '';
-                
+
+                const modalShare = document.getElementById('modal-share');
+                if (options.shareItem) {
+                    modalShare.classList.remove('hidden');
+                    modalShare.onclick = async (e) => {
+                        e.preventDefault();
+                        const item = options.shareItem;
+                        const priceText = item.price ? item.price + ' €' : 'Gratis';
+                        const text = `Schau mal, das habe ich gerade in den Floh gestellt: "${item.name}" für ${priceText}.`;
+                        const shareUrl = window.location.origin + window.location.pathname + "?item=" + item.id;
+                        if (navigator.share) {
+                            try { await navigator.share({ title: `Floh: ${item.name}`, text: text, url: shareUrl }); } catch (err) { console.log(err); }
+                        } else {
+                            navigator.clipboard.writeText(`${text} \n${shareUrl}`);
+                            showToast("Kopiert!", "Der Text wurde in die Zwischenablage kopiert.", null);
+                        }
+                    };
+                } else {
+                    modalShare.classList.add('hidden');
+                    modalShare.onclick = null;
+                }
+
                 if (options.inputType) {
                     modalInput.classList.remove('hidden');
                     modalInput.type = options.inputType;
@@ -419,12 +458,18 @@
                     modalInput.classList.add('hidden');
                 }
 
+                if (options.hideCancel) {
+                    modalCancel.classList.add('hidden');
+                } else {
+                    modalCancel.classList.remove('hidden');
+                }
+
                 modalOverlay.classList.remove('hidden');
                 setTimeout(() => { if(options.inputType) modalInput.focus(); }, 100);
 
                 const handleCancel = () => { cleanup(); resolve(null); };
                 const handleConfirm = (e) => {
-                    if (e) e.preventDefault(); 
+                    if (e) e.preventDefault();
                     const val = options.inputType ? modalInput.value.trim() : true;
                     cleanup();
                     resolve(val);
@@ -445,10 +490,10 @@
             if (currentUser) {
                 return true;
             }
-            const name = await showModal({ 
-                title: "Hallo!", 
-                message: "Wer bist du? Bitte gib deinen Vornamen ein, damit wir wissen, wer hier gerade aktiv ist.", 
-                inputType: "text", 
+            const name = await showModal({
+                title: "Hallo!",
+                message: "Wer bist du? Bitte gib deinen Vornamen ein, damit wir wissen, wer hier gerade aktiv ist.",
+                inputType: "text",
                 placeholder: "Dein Vorname",
                 autocomplete: "given-name"
             });
@@ -462,10 +507,10 @@
         }
 
         async function promptChangeUser() {
-            const name = await showModal({ 
-                title: "Benutzer wechseln", 
-                message: "Als wer möchtest du Floh nutzen?", 
-                inputType: "text", 
+            const name = await showModal({
+                title: "Benutzer wechseln",
+                message: "Als wer möchtest du Floh nutzen?",
+                inputType: "text",
                 placeholder: "Vorname",
                 defaultValue: currentUser,
                 autocomplete: "given-name"
@@ -478,7 +523,7 @@
                     localStorage.removeItem('familyBazarUser');
                 }
                 updateHeaderUser();
-                renderCurrentView(); 
+                renderCurrentView();
             }
         }
 
@@ -523,7 +568,7 @@
                         const fullItem = { id: change.doc.id, ...data };
                         if (data.sellerName && data.sellerName.toLowerCase() !== currentUser.toLowerCase()) {
                             const thumb = (data.images && data.images.length > 0) ? data.images[0] : null;
-                            showToast("Neuer Artikel! 🎉", `${data.sellerName} bietet jetzt "${data.name}" an.`, thumb, fullItem);
+                            showToast("Neuer Artikel! ??", `${data.sellerName} bietet jetzt "${data.name}" an.`, thumb, fullItem);
                         }
                     }
                 });
@@ -531,7 +576,7 @@
                 initialDataLoaded = true;
                 items = [];
                 snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-                
+
                 if (isFirstLoad) {
                     if (initialItemId) {
                         const target = items.find(i => i.id === initialItemId);
@@ -551,7 +596,7 @@
                     const updatedItem = items.find(i => i.id === selectedItem.id);
                     if (updatedItem) selectedItem = updatedItem;
                 }
-                
+
                 renderCurrentView();
 
             }, (error) => {
@@ -569,7 +614,7 @@
                 isAdmin = !isAdmin;
                 clickCount = 0;
                 btnAdminView.classList.toggle('hidden', !isAdmin);
-                showModal({ title: "System", message: isAdmin ? "Admin-Modus aktiviert 👑" : "Admin-Modus deaktiviert" });
+                showModal({ title: "System", message: isAdmin ? "Admin-Modus aktiviert ??" : "Admin-Modus deaktiviert" });
                 if(!isAdmin) {
                     homeAdminSelected.clear();
                     if(currentView === 'admin' || currentView === 'master-archive') goTo('home');
@@ -603,7 +648,7 @@
             if (mainContent) mainContent.scrollTop = 0;
 
             mainContent.innerHTML = '';
-            
+
             if (currentView === 'home' || currentView === 'admin') {
                 btnShowAdd.innerHTML = '<i class="fa-solid fa-plus text-base sm:text-lg"></i>';
                 btnShowWizard.classList.remove('hidden');
@@ -611,7 +656,7 @@
                 btnShowAdd.innerHTML = '<i class="fa-solid fa-arrow-left text-base sm:text-lg"></i>';
                 btnShowWizard.classList.add('hidden');
             }
-            
+
             if (currentView === 'home') renderHome();
             else if (currentView === 'add') renderAddForm();
             else if (currentView === 'edit') renderAddForm(selectedItem);
@@ -691,7 +736,7 @@
                             <div class="truncate">
                                 <p class="font-bold text-gray-800 text-sm sm:text-base truncate">${item.name}</p>
                                 <p class="text-[11px] sm:text-xs text-gray-500 mt-0.5 truncate">
-                                    <span class="font-semibold text-teal-700">Von:</span> ${item.sellerName || '?'} &nbsp;|&nbsp; 
+                                    <span class="font-semibold text-teal-700">Von:</span> ${item.sellerName || '?'} &nbsp;|&nbsp;
                                     <span class="font-semibold text-blue-700">An:</span> ${item.buyerName || '?'}
                                 </p>
                             </div>
@@ -717,11 +762,11 @@
 
             if (archivedItems.length > 0) {
                 container.querySelectorAll('.admin-cb').forEach(cb => {
-                    cb.onclick = (e) => e.stopPropagation(); 
+                    cb.onclick = (e) => e.stopPropagation();
                     cb.onchange = (e) => {
                         if(e.target.checked) adminSelected.add(e.target.dataset.id);
                         else adminSelected.delete(e.target.dataset.id);
-                        
+
                         const bar = document.getElementById('admin-bulk-bar');
                         if(adminSelected.size > 0) {
                             bar.classList.remove('hidden');
@@ -767,30 +812,30 @@
             let stepText = '';
 
             if (wizardStep === 1) {
-                stepTitle = 'Was bietest du an?';
-                stepText = 'Gib dem Artikel einen Namen.';
-                inner = `<input type="text" id="w-name" value="${wizardData.name}" placeholder="z.B. Holzspielzeug" class="w-full border-2 border-teal-100 rounded-xl p-4 text-xl font-bold outline-none focus:border-teal-500 text-center text-teal-900">`;
+                stepTitle = 'Was hast du Schönes?';
+                stepText = 'Gib dem Kind einen Namen.';
+                inner = `<input type="text" id="w-name" value="${wizardData.name}" placeholder="z.B. Mein cooles altes Holzspielzeug" class="w-full border-2 border-teal-100 rounded-xl p-4 text-xl font-bold outline-none focus:border-teal-500 text-center text-teal-900">`;
             } else if (wizardStep === 2) {
-                stepTitle = 'Welche Kategorie?';
-                stepText = 'Tippe auf das, was passt.';
+                stepTitle = 'Wo gehört es rein?';
+                stepText = 'Such dir die passende Schublade aus.';
                 inner = `<div class="grid grid-cols-2 gap-3">` + baseCategories.map(c =>
                     `<button type="button" class="w-cat-btn px-3 py-4 rounded-xl border-2 shadow-sm ${wizardData.category === c ? 'bg-teal-700 text-white border-teal-700 transform scale-105' : 'bg-white text-teal-700 border-teal-100 hover:bg-teal-50'} font-bold text-sm transition-all">${c}</button>`
                 ).join('') + `</div>`;
             } else if (wizardStep === 3) {
-                stepTitle = 'Dein Wunschpreis';
-                stepText = 'Trage eine Zahl ein (leer lassen für Gratis).';
+                stepTitle = 'Was willst du dafür?';
+                stepText = 'Schreib eine Zahl rein (leer = zu verschenken).';
                 inner = `
                     <div class="flex items-center gap-3 bg-teal-50 p-5 rounded-2xl border-2 border-teal-100 min-w-0">
                         <input type="number" id="w-price" value="${wizardData.price}" placeholder="0" class="w-full bg-transparent text-4xl font-bold outline-none text-right text-teal-900 min-w-0">
                         <span class="text-4xl font-bold text-teal-700 shrink-0">€</span>
                     </div>`;
             } else if (wizardStep === 4) {
-                stepTitle = 'Erzähl uns mehr!';
-                stepText = 'Zustand, Besonderheiten (optional).';
+                stepTitle = 'Noch ein paar Details?';
+                stepText = 'Hat es Macken? Ist es wie neu? Erzähl mal!';
                 inner = `<textarea id="w-desc" rows="4" class="w-full border-2 border-teal-100 rounded-xl p-4 text-base outline-none focus:border-teal-500 text-gray-700">${wizardData.description}</textarea>`;
             } else if (wizardStep === 5) {
-                stepTitle = 'Zeig her!';
-                stepText = 'Lade Fotos hoch.';
+                stepTitle = 'Zeig her das gute Stück!';
+                stepText = 'Mach ein paar schicke Fotos.';
                 inner = `
                     <div class="relative w-full min-h-[160px] border-2 border-dashed border-teal-400 rounded-2xl p-5 flex flex-wrap gap-3 items-center justify-center bg-teal-50 cursor-pointer">
                         <div id="w-img-placeholder" class="text-center text-teal-600/60 w-full py-6 pointer-events-none ${wizardData.images.length > 0 ? 'hidden' : ''}">
@@ -801,8 +846,8 @@
                         <input type="file" id="w-file" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                     </div>`;
             } else if (wizardStep === 6) {
-                stepTitle = 'Alles bereit!';
-                stepText = 'Dein Artikel wird jetzt veröffentlicht.';
+                stepTitle = 'Ready for take-off! 🚀';
+                stepText = 'Sieht alles gut aus? Dann ab dafür!';
                 inner = `
                     <div class="bg-teal-50 rounded-2xl p-5 text-base text-teal-900 border-2 border-teal-100">
                         <p class="mb-3 flex justify-between"><span class="text-teal-700">Artikel:</span> <strong>${wizardData.name}</strong></p>
@@ -813,6 +858,13 @@
 
             const totalSteps = 6;
             const progress = Math.round((wizardStep / totalSteps) * 100);
+
+            let nextBtnHtml = '';
+            if (wizardStep === totalSteps) {
+                nextBtnHtml = `<button type="button" id="btn-w-next" class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black rounded-xl py-4 shadow-xl hover:shadow-teal-500/40 hover:scale-105 transform transition-all flex justify-center items-center gap-3 text-lg animate-[pulse_2s_ease-in-out_infinite]"><i class="fa-solid fa-rocket text-xl"></i> Ab in den Floh damit!</button>`;
+            } else {
+                nextBtnHtml = `<button type="button" id="btn-w-next" class="flex-1 bg-teal-700 text-white font-bold rounded-xl py-3.5 shadow-md hover:bg-teal-800 transition flex justify-center items-center gap-2">Weiter <i class="fa-solid fa-arrow-right"></i></button>`;
+            }
 
             formContainer.innerHTML = `
                 <div class="absolute top-0 left-0 right-0 h-2 bg-teal-100 rounded-t-2xl overflow-hidden">
@@ -825,9 +877,7 @@
                 <div class="w-full mb-8">${inner}</div>
                 <div class="flex gap-3 mt-auto pt-4">
                     ${wizardStep > 1 ? `<button type="button" id="btn-w-back" class="px-5 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition"><i class="fa-solid fa-arrow-left"></i></button>` : ''}
-                    <button type="button" id="btn-w-next" class="flex-1 bg-teal-700 text-white font-bold rounded-xl py-3.5 shadow-md hover:bg-teal-800 transition flex justify-center items-center gap-2">
-                        ${wizardStep === totalSteps ? '<i class="fa-solid fa-paper-plane"></i> Abschicken' : 'Weiter <i class="fa-solid fa-arrow-right"></i>'}
-                    </button>
+                    ${nextBtnHtml}
                 </div>
             `;
 
@@ -894,7 +944,7 @@
             const executeWizardNext = async () => {
                 saveWizardData();
                 if (wizardStep === 1 && !wizardData.name.trim()) return showModal({ title: "Halt!", message: "Wie heißt der Artikel?"});
-                
+
                 if (wizardStep < totalSteps) {
                     wizardStep++;
                     renderCurrentView();
@@ -914,18 +964,42 @@
                             buyerName: null,
                             timestamp: Date.now()
                         });
-                        
+
+                        // Push-Nachricht direkt aus dem Frontend über OneSignal senden
+                        fetch("https://onesignal.com/api/v1/notifications", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": "Basic os_v2_app_3gkvq2yharfynnqkzsyu32jqsu676djdjyoeib5ttxuiyfi7fxioz5cngws7eztkhyecw4hnxxg2fjnhjg56hh5fjx2kiomyczwimya"
+                            },
+                            body: JSON.stringify({
+                                app_id: "d995586b-0704-4b86-b60a-ccb14de93095",
+                                included_segments: ["Subscribed Users"],
+                                headings: { en: "Neuer Floh-Artikel! 🎉", de: "Neuer Floh-Artikel! 🎉" },
+                                contents: { 
+                                    en: `${currentUser} hat "${wizardData.name.trim()}" eingestellt.`, 
+                                    de: `${currentUser} hat "${wizardData.name.trim()}" eingestellt.` 
+                                },
+                                url: window.location.origin + window.location.pathname + "?item=" + newDocRef.id
+                            })
+                        }).catch(err => console.error("Push-Fehler:", err));
+
                         seenItems.push(newDocRef.id);
                         localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
-                        
+
                         selectedItem = { id: newDocRef.id, name: wizardData.name.trim(), description: wizardData.description.trim(), category: wizardData.category, price: wizardData.price ? Number(wizardData.price) : null, sellerName: currentUser, images: wizardData.images, status: 'available' };
-                        
+
                         if (window.confetti) {
                             window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#0f766e', '#2dd4bf', '#fef08a'], zIndex: 1000 });
                         }
-                        
+
                         goTo('detail');
-                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf das Teilen-Symbol, um der Familie den direkten Link zu schicken!" });
+                        showModal({ 
+                            title: "Boom! Online! 🎉", 
+                            message: "Dein Artikel ist jetzt im Floh. Willst du direkt den Link in die Familiengruppe hauen?",
+                            shareItem: selectedItem,
+                            hideCancel: true
+                        });
                     } catch (e) {
                         showModal({ title: "Fehler", message: e.message });
                         btnNext.disabled = false;
@@ -955,22 +1029,22 @@
         function createItemCard(item) {
             const card = document.createElement('div');
             card.className = 'bg-white rounded-2xl shadow-sm border border-teal-100 overflow-hidden cursor-pointer transform transition hover:-translate-y-1 hover:shadow-md flex flex-col relative';
-            
+
             const isNew = !seenItems.includes(item.id) && item.sellerName !== currentUser;
 
-            card.onclick = () => { 
-                selectedItem = item; 
+            card.onclick = () => {
+                selectedItem = item;
                 if (isNew) {
                     seenItems.push(item.id);
                     localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
                 }
-                goTo('detail'); 
+                goTo('detail');
             };
-            
+
             const isSold = item.status === 'sold';
             const isArchived = item.status === 'archived';
             const thumb = item.images && item.images.length > 0 ? item.images[0] : null;
-            
+
             const checkedAttr = homeAdminSelected.has(item.id) ? 'checked' : '';
 
             card.innerHTML = `
@@ -1000,7 +1074,7 @@
         function renderHome() {
             const topBar = document.createElement('div');
             topBar.className = 'p-4 bg-white shadow-sm sticky top-0 z-20';
-            
+
             const searchBox = document.createElement('div');
             searchBox.className = 'relative mb-3 flex gap-2 max-w-4xl mx-auto';
             searchBox.innerHTML = `
@@ -1021,16 +1095,16 @@
                     </div>
                 </div>
             `;
-            
+
             const catScroll = document.createElement('div');
             catScroll.className = 'flex overflow-x-auto hide-scroll gap-2 pb-1 max-w-4xl mx-auto';
-            
+
             const countNew = items.filter(i => !seenItems.includes(i.id) && i.sellerName !== currentUser && i.status !== 'archived').length;
 
             categories.forEach(cat => {
                 const btn = document.createElement('button');
                 btn.className = `whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 relative ${currentFilter === cat ? 'bg-teal-700 text-white shadow-md transform scale-105' : 'bg-white text-teal-800 border border-teal-200 hover:bg-teal-50'}`;
-                
+
                 if (cat === 'Neu für Dich') {
                     btn.innerHTML = `<i class="fa-solid fa-sparkles text-amber-300"></i> Neu für Dich ${countNew > 0 ? `<span class="ml-1 bg-amber-400 text-white text-[10px] px-1.5 py-0.5 rounded-full">${countNew}</span>` : ''}`;
                 } else {
@@ -1046,22 +1120,22 @@
             mainContent.appendChild(topBar);
 
             const container = document.createElement('div');
-            container.className = 'p-4 sm:p-6 fade-in pb-10'; 
+            container.className = 'p-4 sm:p-6 fade-in pb-10';
 
             let filteredItems = items.filter(item => {
                 const isNotArchived = item.status !== 'archived';
                 let matchCat = false;
-                
+
                 if (currentFilter === 'Alle') matchCat = true;
                 else if (currentFilter === 'Neu für Dich') matchCat = !seenItems.includes(item.id) && (item.sellerName !== currentUser);
                 else matchCat = item.category === currentFilter;
 
                 const term = currentSearch.toLowerCase();
-                const matchSearch = (item.name || '').toLowerCase().includes(term) || 
+                const matchSearch = (item.name || '').toLowerCase().includes(term) ||
                                     (item.description || '').toLowerCase().includes(term) ||
                                     (item.category || '').toLowerCase().includes(term) ||
                                     (item.sellerName || '').toLowerCase().includes(term);
-                                    
+
                 return matchCat && matchSearch && isNotArchived;
             });
 
@@ -1110,7 +1184,7 @@
                         if (isGrouped) {
                             const groupTitle = document.createElement('h3');
                             groupTitle.className = 'font-bold text-teal-900 mt-8 mb-4 text-lg flex items-center gap-2 first:mt-0';
-                            groupTitle.innerHTML = currentSort === 'seller-asc' 
+                            groupTitle.innerHTML = currentSort === 'seller-asc'
                                 ? `<i class="fa-solid fa-user-circle text-teal-600"></i> ${itemGroup}`
                                 : `<i class="fa-solid fa-tag text-teal-600"></i> ${itemGroup}`;
                             container.appendChild(groupTitle);
@@ -1143,7 +1217,7 @@
                     cb.onchange = (e) => {
                         if(e.target.checked) homeAdminSelected.add(e.target.dataset.id);
                         else homeAdminSelected.delete(e.target.dataset.id);
-                        
+
                         if(homeAdminSelected.size > 0) {
                             actionBar.classList.remove('hidden');
                             document.getElementById('home-bulk-count').textContent = homeAdminSelected.size + ' gewählt';
@@ -1194,25 +1268,29 @@
         function renderAddForm(editItem = null) {
             const formContainer = document.createElement('div');
             formContainer.className = 'p-5 sm:p-8 fade-in w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl my-6 border border-teal-50 mb-10';
-            
+
             const vName = editItem ? editItem.name : '';
             const vDesc = editItem ? editItem.description : '';
             const vCat = editItem ? editItem.category : baseCategories[0];
             const vPrice = editItem && editItem.price !== null ? editItem.price : '';
 
+            const btnClass = editItem 
+                ? "w-full bg-teal-700 text-white font-bold rounded-xl py-3.5 shadow-md hover:bg-teal-800 transition flex justify-center items-center gap-2"
+                : "w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black rounded-xl py-4 shadow-xl hover:shadow-teal-500/40 hover:scale-105 transform transition-all flex justify-center items-center gap-3 text-lg animate-[pulse_2s_ease-in-out_infinite]";
+
             formContainer.innerHTML = `
                 <form id="item-form">
-                    <h2 class="text-2xl font-bold text-teal-900 mb-6 flex items-center gap-2">
-                        <i class="fa-solid ${editItem ? 'fa-pen' : 'fa-hand-holding-heart'} text-teal-600"></i> 
-                        ${editItem ? 'Artikel bearbeiten' : 'Neuer Artikel'}
+                    <h2 class="text-2xl font-black text-teal-900 mb-6 flex items-center gap-2">
+                        <i class="fa-solid ${editItem ? 'fa-pen-to-square' : 'fa-sparkles'} text-teal-600"></i>
+                        ${editItem ? 'Schätzchen anpassen' : 'Was hast du Schönes?'}
                     </h2>
-                    
+
                     <div class="mb-5">
-                        <label class="block text-sm font-semibold text-teal-900 mb-2">Fotos</label>
+                        <label class="block text-sm font-semibold text-teal-900 mb-2">Zeig her! (Fotos)</label>
                         <div class="relative w-full min-h-[140px] border-2 border-dashed border-teal-300 rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-center bg-teal-50/50 cursor-pointer hover:bg-teal-50 transition">
                             <div id="img-placeholder" class="text-center text-teal-600/60 w-full py-4 pointer-events-none">
-                                <i class="fa-solid fa-cloud-arrow-up text-4xl mb-2 text-teal-400"></i>
-                                <p class="text-sm font-medium">Bilder hier antippen</p>
+                                <i class="fa-solid fa-camera-retro text-4xl mb-2 text-teal-400"></i>
+                                <p class="text-sm font-bold mt-1">Fotos hier antippen</p>
                             </div>
                             <div id="img-preview-container" class="hidden flex flex-wrap gap-3 w-full relative z-30 justify-center"></div>
                             <input type="file" id="file-input" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
@@ -1220,30 +1298,31 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-teal-900 mb-1.5">Titel</label>
-                        <input type="text" id="add-name" value="${vName}" required class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500">
+                        <label class="block text-sm font-semibold text-teal-900 mb-1.5">Wie heißt das gute Stück?</label>
+                        <input type="text" id="add-name" value="${vName}" required placeholder="z.B. Coole alte Lampe" class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500">
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-teal-900 mb-1.5">Beschreibung</label>
-                        <textarea id="add-desc" rows="3" class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500">${vDesc}</textarea>
+                        <label class="block text-sm font-semibold text-teal-900 mb-1.5">Erzähl uns mehr darüber</label>
+                        <textarea id="add-desc" rows="3" placeholder="Zustand, Macken, Geschichte..." class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500">${vDesc}</textarea>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 mb-6">
                         <div>
-                            <label class="block text-sm font-semibold text-teal-900 mb-1.5">Kategorie</label>
+                            <label class="block text-sm font-semibold text-teal-900 mb-1.5">Passende Schublade</label>
                             <select id="add-cat" class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500 bg-white">
                                 ${baseCategories.map(c => `<option value="${c}" ${c === vCat ? 'selected' : ''}>${c}</option>`).join('')}
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-teal-900 mb-1.5">Preis (€)</label>
+                            <label class="block text-sm font-semibold text-teal-900 mb-1.5">Dein Wunschpreis (€)</label>
                             <input type="number" id="add-price" value="${vPrice}" class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500" placeholder="Gratis">
                         </div>
                     </div>
 
-                    <button type="submit" id="btn-save" class="w-full bg-teal-700 text-white font-bold rounded-xl py-3.5 shadow-md hover:bg-teal-800 transition flex justify-center items-center gap-2">
-                        <i class="fa-solid ${editItem ? 'fa-floppy-disk' : 'fa-paper-plane'}"></i> <span id="btn-save-text">${editItem ? 'Speichern' : 'Hochladen'}</span>
+                    <button type="submit" id="btn-save" class="${btnClass}">
+                        <i class="fa-solid ${editItem ? 'fa-floppy-disk' : 'fa-rocket'}"></i> 
+                        <span id="btn-save-text">${editItem ? 'Änderungen speichern' : 'Ab in den Floh damit!'}</span>
                     </button>
                 </form>
             `;
@@ -1253,7 +1332,7 @@
             const fileInput = document.getElementById('file-input');
             const imgPreviewContainer = document.getElementById('img-preview-container');
             const imgPlaceholder = document.getElementById('img-placeholder');
-            
+
             let currentBase64Array = editItem && editItem.images ? [...editItem.images] : [];
 
             function renderPreviews() {
@@ -1270,10 +1349,10 @@
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
                         `;
-                        imgWrap.querySelector('button').onclick = (e) => { 
-                            e.preventDefault(); e.stopPropagation(); 
-                            currentBase64Array.splice(index, 1); 
-                            renderPreviews(); 
+                        imgWrap.querySelector('button').onclick = (e) => {
+                            e.preventDefault(); e.stopPropagation();
+                            currentBase64Array.splice(index, 1);
+                            renderPreviews();
                         };
                         imgPreviewContainer.appendChild(imgWrap);
                     });
@@ -1297,10 +1376,12 @@
             };
 
             document.getElementById('item-form').onsubmit = async (e) => {
-                e.preventDefault(); 
+                e.preventDefault();
                 const btnSave = document.getElementById('btn-save');
                 btnSave.disabled = true;
-                document.getElementById('btn-save-text').textContent = 'Speichere...';
+                const btnTextEl = document.getElementById('btn-save-text');
+                const originalText = btnTextEl.textContent;
+                btnTextEl.textContent = 'Lädt hoch...';
 
                 try {
                     const dataObj = {
@@ -1315,27 +1396,54 @@
                         await updateDoc(doc(db, collPath, editItem.id), dataObj);
                         selectedItem = { ...editItem, ...dataObj };
                         goBack();
+                        showToast("Aktualisiert!", "Deine Änderungen wurden gespeichert.", null, selectedItem);
                     } else {
                         dataObj.sellerName = currentUser;
                         dataObj.status = 'available';
                         dataObj.buyerName = null;
                         dataObj.timestamp = Date.now();
                         const newDocRef = await addDoc(collection(db, collPath), dataObj);
+                        
+                        // Push-Nachricht senden
+                        fetch("https://onesignal.com/api/v1/notifications", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": "Basic os_v2_app_3gkvq2yharfynnqkzsyu32jqsu676djdjyoeib5ttxuiyfi7fxioz5cngws7eztkhyecw4hnxxg2fjnhjg56hh5fjx2kiomyczwimya"
+                            },
+                            body: JSON.stringify({
+                                app_id: "d995586b-0704-4b86-b60a-ccb14de93095",
+                                included_segments: ["Subscribed Users"],
+                                headings: { en: "Neuer Floh-Artikel! 🎉", de: "Neuer Floh-Artikel! 🎉" },
+                                contents: { 
+                                    en: `${currentUser} hat "${dataObj.name}" eingestellt.`, 
+                                    de: `${currentUser} hat "${dataObj.name}" eingestellt.` 
+                                },
+                                url: window.location.origin + window.location.pathname + "?item=" + newDocRef.id
+                            })
+                        }).catch(err => console.error("Push-Fehler:", err));
+
                         seenItems.push(newDocRef.id);
                         localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
-                        
+
                         selectedItem = { id: newDocRef.id, ...dataObj };
-                        
+
                         if (window.confetti) {
                             window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#0f766e', '#2dd4bf', '#fef08a'], zIndex: 1000 });
                         }
-                        
+
                         goTo('detail');
-                        showModal({ title: "Super!", message: "Dein Artikel ist online. Klicke unten auf das Teilen-Symbol, um der Familie den direkten Link zu schicken!" });
+                        showModal({ 
+                            title: "Boom! Online! 🎉", 
+                            message: "Dein Artikel ist jetzt im Floh. Willst du direkt den Link in die Familiengruppe hauen?",
+                            shareItem: selectedItem,
+                            hideCancel: true
+                        });
                     }
                 } catch (error) {
                     showModal({ title: "Fehler", message: error.message });
                     btnSave.disabled = false;
+                    btnTextEl.textContent = originalText;
                 }
             };
         }
@@ -1347,10 +1455,10 @@
             const isSold = item.status === 'sold';
             const isArchived = item.status === 'archived';
             const displayImages = item.images && item.images.length > 0 ? item.images : [];
-            
+
             const isOwner = isAdmin || (currentUser && item.sellerName && currentUser.toLowerCase() === item.sellerName.toLowerCase());
             const isBuyer = currentUser && item.buyerName && currentUser.toLowerCase() === item.buyerName.toLowerCase();
-            
+
             const detailContainer = document.createElement('div');
             detailContainer.className = 'bg-white min-h-full pb-10 fade-in relative mx-auto w-full max-w-3xl shadow-xl';
 
@@ -1358,11 +1466,11 @@
             if (displayImages.length > 0) {
                 imagesHtml = `<div class="relative w-full h-64 sm:h-96 bg-teal-50 group">
                     <div id="image-carousel" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory h-full scroll-smooth">`;
-                
+
                 displayImages.forEach((img, idx) => {
                     imagesHtml += `<div class="snap-center shrink-0 w-full h-full relative cursor-zoom-in lb-trigger" data-idx="${idx}"><img src="${img}" class="w-full h-full object-contain sm:object-cover ${(isSold || isArchived) ? 'opacity-40 grayscale' : ''}" /></div>`;
                 });
-                
+
                 imagesHtml += `</div>`;
 
                 if (displayImages.length > 1) {
@@ -1395,9 +1503,9 @@
                      actionButtonsHtml += `<div class="flex-1 bg-gray-100 text-gray-500 font-bold rounded-xl py-3.5 sm:py-4 flex items-center justify-center gap-2 border border-gray-200"><i class="fa-solid fa-lock"></i> Vergeben</div>`;
                 }
             } else {
-                actionButtonsHtml += `<div class="flex-1 bg-gray-100 text-gray-500 font-bold rounded-xl py-3.5 sm:py-4 flex items-center justify-center gap-2 border border-gray-200"><i class="fa-solid fa-box-archive"></i> Archiviert</div>`; 
+                actionButtonsHtml += `<div class="flex-1 bg-gray-100 text-gray-500 font-bold rounded-xl py-3.5 sm:py-4 flex items-center justify-center gap-2 border border-gray-200"><i class="fa-solid fa-box-archive"></i> Archiviert</div>`;
             }
-            
+
             actionButtonsHtml += shareBtnHtml;
             actionButtonsHtml += '</div>';
 
@@ -1407,7 +1515,7 @@
                     ${isSold ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-4"><span class="bg-red-500/90 backdrop-blur-sm text-white text-lg sm:text-2xl font-black py-3 px-6 rounded-2xl uppercase tracking-wider shadow-xl transform -rotate-12 border-2 border-red-400 text-center leading-tight">Vergeben an<br>${item.buyerName}</span></div>` : ''}
                     ${isArchived ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-4"><span class="bg-blue-500/90 backdrop-blur-sm text-white text-lg sm:text-2xl font-black py-3 px-6 rounded-2xl uppercase tracking-wider shadow-xl transform -rotate-12 border-2 border-blue-400 text-center leading-tight">Abgeholt (Archiv)</span></div>` : ''}
                 </div>
-                
+
                 <div class="px-5 pt-5 pb-1">
                     ${actionButtonsHtml}
                 </div>
@@ -1417,10 +1525,10 @@
                         <h2 class="text-2xl sm:text-3xl font-bold text-teal-900 leading-tight">${item.name}</h2>
                         <span class="text-2xl sm:text-3xl font-black text-teal-700 whitespace-nowrap ml-4">${item.price ? item.price + ' €' : 'Gratis'}</span>
                     </div>
-                    
+
                     <div class="inline-block bg-teal-100 text-teal-800 text-sm px-3 py-1.5 rounded-lg font-bold mb-6 shadow-sm">${item.category}</div>
                     <p class="text-gray-700 leading-relaxed mb-8 whitespace-pre-line text-sm sm:text-base">${item.description || 'Keine Beschreibung angegeben.'}</p>
-                    
+
                     <div class="bg-teal-50 rounded-2xl p-4 sm:p-5 flex items-center mb-8 border border-teal-100">
                         <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-teal-200 flex items-center justify-center text-teal-800 font-bold text-xl sm:text-2xl mr-4 shadow-inner">${(item.sellerName || '?').charAt(0).toUpperCase()}</div>
                         <div>
@@ -1458,13 +1566,13 @@
                 btnShare.onclick = async () => {
                     const priceText = item.price ? item.price + ' €' : 'Gratis';
                     const text = `Schau mal, diesen Artikel gibt es im Floh: "${item.name}" für ${priceText}.`;
-                    
+
                     const shareUrl = window.location.origin + window.location.pathname + "?item=" + item.id;
-                    
+
                     const shareData = {
                         title: `Floh: ${item.name}`,
                         text: text,
-                        url: shareUrl 
+                        url: shareUrl
                     };
 
                     if (navigator.share) {
@@ -1522,7 +1630,7 @@
             const btnBuy = document.getElementById('btn-buy');
             if (btnBuy) {
                 btnBuy.onclick = async () => {
-                    if (!await requireUser()) return; 
+                    if (!await requireUser()) return;
                     const confirm = await showModal({ title: "Fantastisch!", message: `Möchtest du den Artikel auf deinen Namen (${currentUser}) reservieren?` });
                     if (confirm !== null) {
                         try {
@@ -1584,12 +1692,12 @@
         function renderAdmin() {
             const adminContainer = document.createElement('div');
             adminContainer.className = 'p-5 sm:p-8 fade-in min-h-full pb-24 max-w-4xl mx-auto';
-            
+
             const soldItems = items.filter(i => i.status === 'sold' || i.status === 'archived');
             const grouped = {};
             let totalRevenue = 0;
             let adminSelected = new Set();
-            
+
             soldItems.forEach(item => {
                 const name = item.buyerName || 'Unbekannt';
                 if(!grouped[name]) grouped[name] = { total: 0, items: [] };
@@ -1604,7 +1712,7 @@
                     <i class="fa-solid fa-crown absolute -right-6 -top-6 text-[8rem] opacity-10"></i>
                     <h2 class="font-black text-3xl mb-2 relative z-10">Admin Dashboard</h2>
                     <p class="text-teal-200 text-sm sm:text-base relative z-10 mb-6">Übersicht aller Verkäufe.</p>
-                    
+
                     <div class="flex gap-4 flex-wrap relative z-10">
                         <div class="bg-black/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
                             <span class="text-xs sm:text-sm font-bold text-teal-100 block mb-1">Gesamtumsatz</span>
@@ -1653,7 +1761,7 @@
                         </div>
                     `;
                 }
-                
+
                 // Floating Action Bar
                 html += `
                     <div id="admin-bulk-bar" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-4 z-[100] hidden transition-all w-[90%] max-w-sm justify-between">
@@ -1673,11 +1781,11 @@
 
             if (Object.keys(grouped).length > 0) {
                 adminContainer.querySelectorAll('.admin-cb').forEach(cb => {
-                    cb.onclick = (e) => e.stopPropagation(); 
+                    cb.onclick = (e) => e.stopPropagation();
                     cb.onchange = (e) => {
                         if(e.target.checked) adminSelected.add(e.target.dataset.id);
                         else adminSelected.delete(e.target.dataset.id);
-                        
+
                         const bar = document.getElementById('admin-bulk-bar');
                         if(adminSelected.size > 0) {
                             bar.classList.remove('hidden');
