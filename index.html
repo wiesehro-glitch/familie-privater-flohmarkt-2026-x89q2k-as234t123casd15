@@ -46,16 +46,11 @@
         <button id="lb-next" class="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 w-12 h-12 rounded-full items-center justify-center text-xl z-50 hover:bg-black/70 transition hidden sm:flex shadow-lg"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
-    <!-- Layout: flex-col with min-h-[100dvh] keeps the sticky header perfectly at the bottom -->
+    <!-- Layout: flex-col with min-h-[100dvh] -->
     <div class="w-full max-w-7xl mx-auto bg-white min-h-[100dvh] shadow-lg relative flex flex-col">
         
-        <!-- Main Content nimmt den restlichen Platz ein -->
-        <main id="main-content" class="flex-1 overflow-y-auto relative bg-teal-50/30">
-            <!-- Dynamischer Inhalt -->
-        </main>
-
-        <!-- Header wurde nach unten verlagert und abgerundet -->
-        <header class="bg-teal-800 text-white py-2 px-3 sm:px-4 sticky bottom-0 z-30 shadow-[0_-5px_15px_rgba(0,0,0,0.15)] flex justify-between items-center gap-2 pb-safe rounded-t-[1.5rem] sm:rounded-none border-t border-teal-700">
+        <!-- Header ist jetzt wieder oben -->
+        <header class="bg-teal-800 text-white py-2 px-3 sm:px-4 sticky top-0 z-30 shadow-md flex justify-between items-center gap-2 border-b border-teal-700">
             <div id="header-logo" class="font-bold text-lg sm:text-xl cursor-pointer select-none flex items-center gap-1.5 whitespace-nowrap shrink-0 ml-2">
                 <i class="fa-solid fa-store"></i> Floh
             </div>
@@ -69,8 +64,8 @@
                     <div id="btn-user-profile" class="text-xs sm:text-sm font-bold bg-teal-900 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-teal-950 transition flex items-center gap-1.5 border border-teal-700 shadow-inner whitespace-nowrap" title="Menü">
                         <i class="fa-solid fa-user-circle text-base sm:text-lg text-teal-300"></i> <span id="header-user-name" class="max-w-[70px] sm:max-w-[100px] truncate">Gast</span>
                     </div>
-                    <!-- Dropdown öffnet sich jetzt nach oben (bottom-full mb-3) -->
-                    <div id="user-dropdown" class="hidden absolute right-0 bottom-full mb-3 w-52 bg-white rounded-xl shadow-xl border border-teal-100 py-2 z-[60] text-gray-800 origin-bottom-right">
+                    <!-- Dropdown öffnet sich jetzt nach unten -->
+                    <div id="user-dropdown" class="hidden absolute right-0 top-full mt-3 w-52 bg-white rounded-xl shadow-xl border border-teal-100 py-2 z-[60] text-gray-800 origin-top-right">
                         <button id="dropdown-install-app" class="hidden w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5 font-bold text-teal-700 border-b border-gray-100">
                             <i class="fa-solid fa-download w-4 text-center"></i> App installieren
                         </button>
@@ -92,6 +87,11 @@
             </div>
         </header>
 
+        <!-- Main Content nimmt den restlichen Platz ein -->
+        <main id="main-content" class="flex-1 overflow-y-auto relative bg-teal-50/30">
+            <!-- Dynamischer Inhalt -->
+        </main>
+
     </div>
 
     <!-- Modal Dialog -->
@@ -111,7 +111,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-        // Dein originaler Firebase Config Block
         const firebaseConfig = {
             apiKey: "AIzaSyBFHVLSKY0i2clWQULO6pCyGyfDLeitSAk",
             authDomain: "troedelmarkt-d6b23.firebaseapp.com",
@@ -1652,7 +1651,7 @@
 
             if (Object.keys(grouped).length > 0) {
                 adminContainer.querySelectorAll('.admin-cb').forEach(cb => {
-                    cb.onclick = (e) => e.stopPropagation();
+                    cb.onclick = (e) => e.stopPropagation(); 
                     cb.onchange = (e) => {
                         if(e.target.checked) adminSelected.add(e.target.dataset.id);
                         else adminSelected.delete(e.target.dataset.id);
