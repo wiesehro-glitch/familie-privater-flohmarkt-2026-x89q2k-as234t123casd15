@@ -127,18 +127,16 @@
                         </button>
                         
                         <!-- NEUER PUSH SLIDER -->
-                        <div id="dropdown-push-container" class="w-full text-left px-4 py-2.5 hover:bg-teal-50 flex items-center justify-between border-b border-gray-100 cursor-pointer">
+                        <label for="push-toggle" id="dropdown-push-container" class="w-full text-left px-4 py-2.5 hover:bg-teal-50 flex items-center justify-between border-b border-gray-100 cursor-pointer select-none">
                             <div class="flex items-center gap-2.5 text-sm">
                                 <i class="fa-solid fa-bell w-4 text-teal-700 text-center"></i> Mitteilungen
                             </div>
-                            <label for="push-toggle" class="flex items-center cursor-pointer pointer-events-none">
-                                <div class="relative">
-                                    <input type="checkbox" id="push-toggle" class="sr-only pointer-events-auto">
-                                    <div class="toggle-bg block bg-gray-300 w-10 h-6 rounded-full transition-colors"></div>
-                                    <div class="toggle-dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform"></div>
-                                </div>
-                            </label>
-                        </div>
+                            <div class="relative pointer-events-none">
+                                <input type="checkbox" id="push-toggle" class="sr-only">
+                                <div class="toggle-bg block bg-gray-300 w-10 h-6 rounded-full transition-colors"></div>
+                                <div class="toggle-dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform"></div>
+                            </div>
+                        </label>
 
                         <button id="dropdown-change-user" class="w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5">
                             <i class="fa-solid fa-user-pen w-4 text-teal-700 text-center"></i> Benutzer wechseln
@@ -365,28 +363,39 @@
 
         // Verhindern, dass Dropdown sich schließt, wenn man auf den Push-Toggle klickt
         document.getElementById('dropdown-push-container').addEventListener('click', (e) => {
-            e.stopPropagation();
+            e.stopPropagation(); // Stoppt das Bubbling, lässt aber die Checkbox arbeiten
         });
 
         // Push-Slider Logic
         document.getElementById('push-toggle').addEventListener('change', async (e) => {
+            const isChecked = e.target.checked;
+
             if (!window.OneSignal || !window.OneSignal.Notifications) {
-                e.preventDefault();
-                e.target.checked = !e.target.checked; // Zurücksetzen
-                showModal({ title: "Warten", message: "Der Push-Dienst lädt noch. Bitte probiere es gleich nochmal." });
+                e.target.checked = !isChecked; // Zurücksetzen
+                showModal({ title: "Warten", message: "Der Push-Dienst lädt noch. Bitte probiere es in 2 Sekunden nochmal." });
                 return;
             }
 
             try {
-                if (e.target.checked) {
+                if (isChecked) {
+                    // Erlaubnis anfragen (Popup des Handys/Browsers öffnet sich)
                     await OneSignal.Notifications.requestPermission();
-                    OneSignal.User.PushSubscription.optIn();
+                    
+                    // Überprüfen ob der Nutzer wirklich "Erlauben" geklickt hat
+                    if (OneSignal.Notifications.permission === "granted") {
+                        OneSignal.User.PushSubscription.optIn();
+                        showModal({ title: "Aktiviert! 🔔", message: "Mitteilungen sind jetzt eingeschaltet." });
+                    } else {
+                        e.target.checked = false; // Schalter wieder ausmachen
+                        showModal({ title: "Blockiert", message: "Du hast die Mitteilungen abgelehnt oder im Browser blockiert. Bitte in den Geräte-Einstellungen erlauben." });
+                    }
                 } else {
                     OneSignal.User.PushSubscription.optOut();
+                    showModal({ title: "Deaktiviert", message: "Mitteilungen sind jetzt ausgeschaltet." });
                 }
             } catch (err) {
-                e.target.checked = !e.target.checked; // Zurücksetzen bei Fehler
-                showModal({ title: "Push Fehler", message: "Es gab ein Problem: " + (err.message || JSON.stringify(err)) });
+                e.target.checked = !isChecked; // Zurücksetzen bei Fehler
+                showModal({ title: "Fehler", message: "Konnte nicht geändert werden: " + (err.message || "Unbekannt") });
             }
         });
 
