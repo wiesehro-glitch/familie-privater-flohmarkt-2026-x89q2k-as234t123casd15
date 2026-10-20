@@ -46,13 +46,32 @@
         <button id="lb-next" class="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 w-12 h-12 rounded-full items-center justify-center text-xl z-50 hover:bg-black/70 transition hidden sm:flex shadow-lg"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
-    <!-- Layout: flex-col with min-h-[100dvh] -->
-    <div class="w-full max-w-7xl mx-auto bg-white min-h-[100dvh] shadow-lg relative flex flex-col">
-        
-        <!-- Header ist jetzt wieder oben -->
-        <header class="bg-teal-800 text-white py-2 px-3 sm:px-4 sticky top-0 z-30 shadow-md flex justify-between items-center gap-2 border-b border-teal-700">
-            <div id="header-logo" class="font-bold text-lg sm:text-xl cursor-pointer select-none flex items-center gap-1.5 whitespace-nowrap shrink-0 ml-2">
-                <i class="fa-solid fa-store"></i> Floh
+    <div class="w-full max-w-7xl mx-auto bg-white min-h-screen shadow-lg relative flex flex-col">
+        <header class="bg-teal-700 text-white p-3 sm:p-4 sticky top-0 z-30 shadow-md flex justify-between items-center gap-2">
+            <div id="header-logo" class="cursor-pointer select-none flex items-center shrink-0 ml-1 sm:ml-2 hover:opacity-90 transition-opacity">
+                <!-- Custom SVG Floh Logo -->
+                <svg viewBox="0 0 85 42" height="28" class="text-white fill-current overflow-visible" style="font-variant-ligatures: none;">
+                   <!-- F -->
+                   <text x="0" y="32" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="34" fill="white">F</text>
+                   <!-- l: Minimal kleiner gemacht, damit es exakt so hoch ist wie das große F -->
+                   <text x="21" y="32" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="32" fill="white">l</text>
+                   
+                   <g transform="translate(31, 4)">
+                       <!-- O-Body -->
+                       <circle cx="12" cy="19" r="8.5" fill="none" stroke="white" stroke-width="5"/>
+                       <!-- Antennae -->
+                       <path d="M 7 9 Q 3 2 1 5" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                       <circle cx="1" cy="5" r="1.5" fill="white" />
+                       <path d="M 17 9 Q 21 2 23 5" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                       <circle cx="23" cy="5" r="1.5" fill="white" />
+                       <!-- Bottom waves -->
+                       <path d="M 6 33 Q 12 37 18 33" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                       <path d="M 9 38 Q 12 40 15 38" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                   </g>
+                   
+                   <!-- h: Exakt 2 Pixel nach rechts verschoben -->
+                   <text x="56" y="32" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="34" fill="white">h</text>
+                </svg>
             </div>
             
             <div class="flex items-center shrink-0 gap-2 sm:gap-3 mr-1">
