@@ -6,7 +6,7 @@
     <title>Floh</title>
     
     <!-- PWA Meta Tags & Icons -->
-    <meta name="theme-color" content="#15803d">
+    <meta name="theme-color" content="#115e59"> <!-- Petrol Ton -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="logo.png">
@@ -28,9 +28,10 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .snap-x { scroll-snap-type: x mandatory; }
         .snap-center { scroll-snap-align: center; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
     </style>
 </head>
-<body class="bg-green-50 text-gray-800">
+<body class="bg-teal-50 text-gray-800">
 
     <div id="toast-container" class="fixed top-0 left-0 right-0 z-[100] p-4 flex flex-col gap-2 pointer-events-none"></div>
 
@@ -45,58 +46,63 @@
         <button id="lb-next" class="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/50 w-12 h-12 rounded-full items-center justify-center text-xl z-50 hover:bg-black/70 transition hidden sm:flex shadow-lg"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
-    <div class="w-full max-w-7xl mx-auto bg-white min-h-screen shadow-lg relative flex flex-col">
+    <!-- Layout: flex-col with min-h-[100dvh] keeps the sticky header perfectly at the bottom -->
+    <div class="w-full max-w-7xl mx-auto bg-white min-h-[100dvh] shadow-lg relative flex flex-col">
         
-        <header class="bg-green-700 text-white p-3 sm:p-4 sticky top-0 z-30 shadow-md flex justify-between items-center gap-2">
-            <div id="header-logo" class="font-bold text-lg sm:text-xl cursor-pointer select-none flex items-center gap-1.5 whitespace-nowrap shrink-0">
+        <!-- Main Content nimmt den restlichen Platz ein -->
+        <main id="main-content" class="flex-1 overflow-y-auto relative bg-teal-50/30">
+            <!-- Dynamischer Inhalt -->
+        </main>
+
+        <!-- Header wurde nach unten verlagert und abgerundet -->
+        <header class="bg-teal-800 text-white py-2 px-3 sm:px-4 sticky bottom-0 z-30 shadow-[0_-5px_15px_rgba(0,0,0,0.15)] flex justify-between items-center gap-2 pb-safe rounded-t-[1.5rem] sm:rounded-none border-t border-teal-700">
+            <div id="header-logo" class="font-bold text-lg sm:text-xl cursor-pointer select-none flex items-center gap-1.5 whitespace-nowrap shrink-0 ml-2">
                 <i class="fa-solid fa-store"></i> Floh
             </div>
-            <div class="flex items-center shrink-0 gap-2">
-                <button id="btn-admin-view" class="hidden text-green-200 hover:text-white transition" title="Admin Dashboard">
+            
+            <div class="flex items-center shrink-0 gap-2 sm:gap-3 mr-1">
+                <button id="btn-admin-view" class="hidden text-teal-200 hover:text-white transition" title="Admin Dashboard">
                     <i class="fa-solid fa-crown text-lg"></i>
                 </button>
                 
                 <div class="relative">
-                    <div id="btn-user-profile" class="text-xs sm:text-sm font-bold bg-green-800 px-3 py-1.5 rounded-full cursor-pointer hover:bg-green-900 transition flex items-center gap-1.5 border border-green-600 shadow-inner whitespace-nowrap" title="Menü">
-                        <i class="fa-solid fa-user-circle text-base sm:text-lg"></i> <span id="header-user-name" class="max-w-[70px] sm:max-w-[100px] truncate">Gast</span>
-                        <i class="fa-solid fa-chevron-down text-[10px] ml-0.5 opacity-80"></i>
+                    <div id="btn-user-profile" class="text-xs sm:text-sm font-bold bg-teal-900 px-3 py-1.5 rounded-xl cursor-pointer hover:bg-teal-950 transition flex items-center gap-1.5 border border-teal-700 shadow-inner whitespace-nowrap" title="Menü">
+                        <i class="fa-solid fa-user-circle text-base sm:text-lg text-teal-300"></i> <span id="header-user-name" class="max-w-[70px] sm:max-w-[100px] truncate">Gast</span>
                     </div>
-                    <div id="user-dropdown" class="hidden absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-green-100 py-2 z-50 text-gray-800">
-                        <button id="dropdown-install-app" class="hidden w-full text-left px-4 py-2.5 text-sm hover:bg-green-50 flex items-center gap-2.5 font-bold text-green-700 border-b border-gray-100">
+                    <!-- Dropdown öffnet sich jetzt nach oben (bottom-full mb-3) -->
+                    <div id="user-dropdown" class="hidden absolute right-0 bottom-full mb-3 w-52 bg-white rounded-xl shadow-xl border border-teal-100 py-2 z-[60] text-gray-800 origin-bottom-right">
+                        <button id="dropdown-install-app" class="hidden w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5 font-bold text-teal-700 border-b border-gray-100">
                             <i class="fa-solid fa-download w-4 text-center"></i> App installieren
                         </button>
-                        <button id="dropdown-change-user" class="w-full text-left px-4 py-2.5 text-sm hover:bg-green-50 flex items-center gap-2.5">
-                            <i class="fa-solid fa-user-pen w-4 text-green-700 text-center"></i> Benutzer wechseln
+                        <button id="dropdown-change-user" class="w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5">
+                            <i class="fa-solid fa-user-pen w-4 text-teal-700 text-center"></i> Benutzer wechseln
                         </button>
-                        <button id="dropdown-my-archive" class="w-full text-left px-4 py-2.5 text-sm hover:bg-green-50 flex items-center gap-2.5 border-t border-gray-100">
-                            <i class="fa-solid fa-box-archive w-4 text-green-700 text-center"></i> Mein Archiv
+                        <button id="dropdown-my-archive" class="w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 flex items-center gap-2.5 border-t border-gray-100">
+                            <i class="fa-solid fa-box-archive w-4 text-teal-700 text-center"></i> Mein Archiv
                         </button>
                     </div>
                 </div>
 
-                <button id="btn-show-wizard" class="bg-white text-green-700 w-8 h-8 sm:w-10 sm:h-10 rounded-full shadow hover:bg-green-50 transition flex items-center justify-center shrink-0" title="Assistent">
-                    <i class="fa-solid fa-wand-magic-sparkles text-sm sm:text-base"></i>
+                <button id="btn-show-wizard" class="bg-teal-700 text-white w-9 h-9 rounded-full shadow hover:bg-teal-600 border border-teal-600 transition flex items-center justify-center shrink-0" title="Assistent">
+                    <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
                 </button>
-                <button id="btn-show-add" class="bg-white text-green-700 w-8 h-8 sm:w-10 sm:h-10 rounded-full shadow hover:bg-green-50 transition flex items-center justify-center shrink-0" title="Neu/Zurück">
-                    <i class="fa-solid fa-plus text-sm sm:text-base"></i>
+                <button id="btn-show-add" class="bg-white text-teal-800 w-10 h-10 rounded-full shadow-lg hover:bg-teal-50 transition flex items-center justify-center shrink-0 border-2 border-teal-200 font-bold" title="Neu/Zurück">
+                    <i class="fa-solid fa-plus text-base sm:text-lg"></i>
                 </button>
             </div>
         </header>
 
-        <main id="main-content" class="flex-1 overflow-y-auto pb-20 relative bg-green-50/30">
-            <!-- Dynamischer Inhalt -->
-        </main>
-
     </div>
 
+    <!-- Modal Dialog -->
     <div id="modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
         <form id="modal-form" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all">
-            <h3 id="modal-title" class="text-xl font-bold mb-2 text-green-900"></h3>
+            <h3 id="modal-title" class="text-xl font-bold mb-2 text-teal-900"></h3>
             <p id="modal-message" class="text-gray-600 mb-5 text-sm leading-relaxed"></p>
-            <input id="modal-input" type="text" autocomplete="given-name" class="hidden w-full border-2 border-green-100 rounded-xl p-3 mb-4 focus:ring-2 focus:ring-green-600 outline-none transition bg-green-50">
+            <input id="modal-input" type="text" autocomplete="given-name" class="hidden w-full border-2 border-teal-100 rounded-xl p-3 mb-4 focus:ring-2 focus:ring-teal-600 outline-none transition bg-teal-50">
             <div class="flex justify-end gap-3 mt-2">
                 <button type="button" id="modal-cancel" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-xl font-medium transition text-sm">Abbrechen</button>
-                <button type="submit" id="modal-confirm" class="px-5 py-2 bg-green-700 text-white rounded-xl hover:bg-green-800 font-medium shadow-md transition text-sm">OK</button>
+                <button type="submit" id="modal-confirm" class="px-5 py-2 bg-teal-700 text-white rounded-xl hover:bg-teal-800 font-medium shadow-md transition text-sm">OK</button>
             </div>
         </form>
     </div>
@@ -105,6 +111,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+        // Dein originaler Firebase Config Block
         const firebaseConfig = {
             apiKey: "AIzaSyBFHVLSKY0i2clWQULO6pCyGyfDLeitSAk",
             authDomain: "troedelmarkt-d6b23.firebaseapp.com",
@@ -141,7 +148,6 @@
         
         let seenItems = JSON.parse(localStorage.getItem('fbSeenItems') || '[]');
 
-        // --- Lightbox Logik mit Wischen ---
         let lbImages = [];
         let lbIndex = 0;
         let lbTouchStartX = 0;
@@ -341,12 +347,12 @@
 
         function showToast(title, message, imageSrc, targetItem = null) {
             const toast = document.createElement('div');
-            toast.className = 'bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border-l-4 border-green-500 p-4 flex items-center gap-3 transform transition-all duration-500 -translate-y-full opacity-0 pointer-events-auto cursor-pointer max-w-sm mx-auto w-full';
+            toast.className = 'bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border-l-4 border-teal-500 p-4 flex items-center gap-3 transform transition-all duration-500 -translate-y-full opacity-0 pointer-events-auto cursor-pointer max-w-sm mx-auto w-full';
             
             toast.innerHTML = `
-                ${imageSrc ? `<img src="${imageSrc}" class="w-12 h-12 rounded-xl object-cover shadow-sm">` : `<div class="w-12 h-12 rounded-xl bg-green-100 text-green-500 flex items-center justify-center text-xl"><i class="fa-solid fa-gift"></i></div>`}
+                ${imageSrc ? `<img src="${imageSrc}" class="w-12 h-12 rounded-xl object-cover shadow-sm">` : `<div class="w-12 h-12 rounded-xl bg-teal-100 text-teal-500 flex items-center justify-center text-xl"><i class="fa-solid fa-gift"></i></div>`}
                 <div class="flex-1">
-                    <h4 class="font-bold text-green-900 text-sm mb-0.5">${title}</h4>
+                    <h4 class="font-bold text-teal-900 text-sm mb-0.5">${title}</h4>
                     <p class="text-xs text-gray-700 leading-snug">${message}</p>
                 </div>
             `;
@@ -578,10 +584,10 @@
             mainContent.innerHTML = '';
             
             if (currentView === 'home' || currentView === 'admin') {
-                btnShowAdd.innerHTML = '<i class="fa-solid fa-plus text-sm sm:text-base"></i>';
+                btnShowAdd.innerHTML = '<i class="fa-solid fa-plus text-base sm:text-lg"></i>';
                 btnShowWizard.classList.remove('hidden');
             } else {
-                btnShowAdd.innerHTML = '<i class="fa-solid fa-arrow-left text-sm sm:text-base"></i>';
+                btnShowAdd.innerHTML = '<i class="fa-solid fa-arrow-left text-base sm:text-lg"></i>';
                 btnShowWizard.classList.add('hidden');
             }
             
@@ -612,17 +618,17 @@
             container.innerHTML = `
                 <div class="mb-5 flex justify-between items-center">
                     <div>
-                        <h2 class="text-2xl font-black text-green-900 tracking-tight flex items-center gap-2">
-                            <i class="fa-solid fa-box-archive text-green-600"></i> Mein Archiv
+                        <h2 class="text-2xl font-black text-teal-900 tracking-tight flex items-center gap-2">
+                            <i class="fa-solid fa-box-archive text-teal-600"></i> Mein Archiv
                         </h2>
                         <p class="text-gray-500 text-sm mt-1">Deine archivierten Artikel.</p>
                     </div>
-                    <button id="btn-back-home" class="bg-green-100 text-green-800 px-3 py-1.5 rounded-xl font-bold text-sm hover:bg-green-200 transition" onclick="goBack()"><i class="fa-solid fa-arrow-left mr-1"></i> Zurück</button>
+                    <button id="btn-back-home" class="bg-teal-100 text-teal-800 px-3 py-1.5 rounded-xl font-bold text-sm hover:bg-teal-200 transition" onclick="goBack()"><i class="fa-solid fa-arrow-left mr-1"></i> Zurück</button>
                 </div>
             `;
 
             if (userItems.length === 0) {
-                container.innerHTML += `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-box-open text-5xl mb-4"></i><p class="font-bold text-lg">Dein Archiv ist leer.</p></div>`;
+                container.innerHTML += `<div class="text-center text-teal-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-box-open text-5xl mb-4"></i><p class="font-bold text-lg">Dein Archiv ist leer.</p></div>`;
             } else {
                 const grid = document.createElement('div');
                 grid.className = getGridClasses();
@@ -641,35 +647,35 @@
             let html = `
                 <div class="mb-5 flex justify-between items-center">
                     <div>
-                        <h2 class="text-2xl font-black text-green-900 tracking-tight flex items-center gap-2">
+                        <h2 class="text-2xl font-black text-teal-900 tracking-tight flex items-center gap-2">
                             <i class="fa-solid fa-crown text-amber-500"></i> Admin Archiv
                         </h2>
                         <p class="text-gray-500 text-sm mt-1">Alle archivierten Artikel.</p>
                     </div>
-                    <button id="btn-back-admin" class="bg-green-100 text-green-800 px-3 py-1.5 rounded-xl font-bold text-sm hover:bg-green-200 transition" onclick="goBack()"><i class="fa-solid fa-arrow-left mr-1"></i> Dashboard</button>
+                    <button id="btn-back-admin" class="bg-teal-100 text-teal-800 px-3 py-1.5 rounded-xl font-bold text-sm hover:bg-teal-200 transition" onclick="goBack()"><i class="fa-solid fa-arrow-left mr-1"></i> Dashboard</button>
                 </div>
             `;
 
             if (archivedItems.length === 0) {
-                html += `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-box-open text-5xl mb-4"></i><p class="font-bold text-lg">Keine archivierten Artikel vorhanden.</p></div>`;
+                html += `<div class="text-center text-teal-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-box-open text-5xl mb-4"></i><p class="font-bold text-lg">Keine archivierten Artikel vorhanden.</p></div>`;
             } else {
-                html += `<ul class="bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden divide-y divide-green-50">`;
+                html += `<ul class="bg-white rounded-2xl shadow-sm border border-teal-100 overflow-hidden divide-y divide-teal-50">`;
                 archivedItems.forEach(item => {
                     const thumb = item.images && item.images.length > 0 ? item.images[0] : null;
                     html += `
-                    <li class="p-3 sm:p-4 flex justify-between items-center hover:bg-green-50 transition cursor-pointer item-row" data-id="${item.id}">
+                    <li class="p-3 sm:p-4 flex justify-between items-center hover:bg-teal-50 transition cursor-pointer item-row" data-id="${item.id}">
                         <div class="flex items-center overflow-hidden pr-2">
-                            <input type="checkbox" class="admin-cb w-5 h-5 mr-3 accent-green-600 pointer-events-auto shrink-0" data-id="${item.id}">
-                            ${thumb ? `<img src="${thumb}" class="w-12 h-12 rounded-xl object-cover mr-3 sm:mr-4 shadow-sm border border-gray-200 shrink-0">` : `<div class="w-12 h-12 rounded-xl bg-green-50 mr-3 sm:mr-4 flex items-center justify-center text-green-300 shrink-0"><i class="fa-solid fa-box text-2xl"></i></div>`}
+                            <input type="checkbox" class="admin-cb w-5 h-5 mr-3 accent-teal-600 pointer-events-auto shrink-0" data-id="${item.id}">
+                            ${thumb ? `<img src="${thumb}" class="w-12 h-12 rounded-xl object-cover mr-3 sm:mr-4 shadow-sm border border-gray-200 shrink-0">` : `<div class="w-12 h-12 rounded-xl bg-teal-50 mr-3 sm:mr-4 flex items-center justify-center text-teal-300 shrink-0"><i class="fa-solid fa-box text-2xl"></i></div>`}
                             <div class="truncate">
                                 <p class="font-bold text-gray-800 text-sm sm:text-base truncate">${item.name}</p>
                                 <p class="text-[11px] sm:text-xs text-gray-500 mt-0.5 truncate">
-                                    <span class="font-semibold text-green-700">Von:</span> ${item.sellerName || '?'} &nbsp;|&nbsp; 
+                                    <span class="font-semibold text-teal-700">Von:</span> ${item.sellerName || '?'} &nbsp;|&nbsp; 
                                     <span class="font-semibold text-blue-700">An:</span> ${item.buyerName || '?'}
                                 </p>
                             </div>
                         </div>
-                        <span class="font-bold text-green-700 text-sm sm:text-base whitespace-nowrap shrink-0">${item.price ? item.price + ' €' : '0 €'}</span>
+                        <span class="font-bold text-teal-700 text-sm sm:text-base whitespace-nowrap shrink-0">${item.price ? item.price + ' €' : '0 €'}</span>
                     </li>
                     `;
                 });
@@ -679,7 +685,7 @@
                     <div id="admin-bulk-bar" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-4 z-[100] hidden transition-all w-[90%] max-w-sm justify-between">
                         <span id="bulk-count" class="font-bold text-sm whitespace-nowrap">0 gewählt</span>
                         <div class="flex gap-2">
-                            <button id="btn-bulk-unarchive" class="bg-green-600 hover:bg-green-500 px-3 py-1.5 rounded-lg font-bold text-sm transition">Wiederherstellen</button>
+                            <button id="btn-bulk-unarchive" class="bg-teal-600 hover:bg-teal-500 px-3 py-1.5 rounded-lg font-bold text-sm transition">Wiederherstellen</button>
                             <button id="btn-bulk-delete" class="bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg font-bold text-sm transition">Löschen</button>
                         </div>
                     </div>
@@ -733,7 +739,7 @@
 
         function renderWizard() {
             const formContainer = document.createElement('div');
-            formContainer.className = 'p-5 sm:p-8 fade-in w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl my-6 border border-green-50 flex flex-col relative pb-24';
+            formContainer.className = 'p-5 sm:p-8 fade-in w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl my-6 border border-teal-50 flex flex-col relative pb-24';
 
             let inner = '';
             let stepTitle = '';
@@ -742,32 +748,32 @@
             if (wizardStep === 1) {
                 stepTitle = 'Was bietest du an?';
                 stepText = 'Gib dem Artikel einen Namen.';
-                inner = `<input type="text" id="w-name" value="${wizardData.name}" placeholder="z.B. Holzspielzeug" class="w-full border-2 border-green-100 rounded-xl p-4 text-xl font-bold outline-none focus:border-green-500 text-center text-green-900">`;
+                inner = `<input type="text" id="w-name" value="${wizardData.name}" placeholder="z.B. Holzspielzeug" class="w-full border-2 border-teal-100 rounded-xl p-4 text-xl font-bold outline-none focus:border-teal-500 text-center text-teal-900">`;
             } else if (wizardStep === 2) {
                 stepTitle = 'Welche Kategorie?';
                 stepText = 'Tippe auf das, was passt.';
                 inner = `<div class="grid grid-cols-2 gap-3">` + baseCategories.map(c =>
-                    `<button type="button" class="w-cat-btn px-3 py-4 rounded-xl border-2 shadow-sm ${wizardData.category === c ? 'bg-green-700 text-white border-green-700 transform scale-105' : 'bg-white text-green-700 border-green-100 hover:bg-green-50'} font-bold text-sm transition-all">${c}</button>`
+                    `<button type="button" class="w-cat-btn px-3 py-4 rounded-xl border-2 shadow-sm ${wizardData.category === c ? 'bg-teal-700 text-white border-teal-700 transform scale-105' : 'bg-white text-teal-700 border-teal-100 hover:bg-teal-50'} font-bold text-sm transition-all">${c}</button>`
                 ).join('') + `</div>`;
             } else if (wizardStep === 3) {
                 stepTitle = 'Dein Wunschpreis';
                 stepText = 'Trage eine Zahl ein (leer lassen für Gratis).';
                 inner = `
-                    <div class="flex items-center gap-3 bg-green-50 p-5 rounded-2xl border-2 border-green-100 min-w-0">
-                        <input type="number" id="w-price" value="${wizardData.price}" placeholder="0" class="w-full bg-transparent text-4xl font-bold outline-none text-right text-green-900 min-w-0">
-                        <span class="text-4xl font-bold text-green-700 shrink-0">€</span>
+                    <div class="flex items-center gap-3 bg-teal-50 p-5 rounded-2xl border-2 border-teal-100 min-w-0">
+                        <input type="number" id="w-price" value="${wizardData.price}" placeholder="0" class="w-full bg-transparent text-4xl font-bold outline-none text-right text-teal-900 min-w-0">
+                        <span class="text-4xl font-bold text-teal-700 shrink-0">€</span>
                     </div>`;
             } else if (wizardStep === 4) {
                 stepTitle = 'Erzähl uns mehr!';
                 stepText = 'Zustand, Besonderheiten (optional).';
-                inner = `<textarea id="w-desc" rows="4" class="w-full border-2 border-green-100 rounded-xl p-4 text-base outline-none focus:border-green-500 text-gray-700">${wizardData.description}</textarea>`;
+                inner = `<textarea id="w-desc" rows="4" class="w-full border-2 border-teal-100 rounded-xl p-4 text-base outline-none focus:border-teal-500 text-gray-700">${wizardData.description}</textarea>`;
             } else if (wizardStep === 5) {
                 stepTitle = 'Zeig her!';
                 stepText = 'Lade Fotos hoch.';
                 inner = `
-                    <div class="relative w-full min-h-[160px] border-2 border-dashed border-green-400 rounded-2xl p-5 flex flex-wrap gap-3 items-center justify-center bg-green-50 cursor-pointer">
-                        <div id="w-img-placeholder" class="text-center text-green-600/60 w-full py-6 pointer-events-none ${wizardData.images.length > 0 ? 'hidden' : ''}">
-                            <i class="fa-solid fa-camera text-5xl mb-3 text-green-500"></i>
+                    <div class="relative w-full min-h-[160px] border-2 border-dashed border-teal-400 rounded-2xl p-5 flex flex-wrap gap-3 items-center justify-center bg-teal-50 cursor-pointer">
+                        <div id="w-img-placeholder" class="text-center text-teal-600/60 w-full py-6 pointer-events-none ${wizardData.images.length > 0 ? 'hidden' : ''}">
+                            <i class="fa-solid fa-camera text-5xl mb-3 text-teal-500"></i>
                             <p class="text-base font-bold">Fotos hier antippen</p>
                         </div>
                         <div id="w-img-preview" class="flex flex-wrap gap-3 w-full relative z-30 justify-center ${wizardData.images.length === 0 ? 'hidden' : ''}"></div>
@@ -777,10 +783,10 @@
                 stepTitle = 'Alles bereit!';
                 stepText = 'Dein Artikel wird jetzt veröffentlicht.';
                 inner = `
-                    <div class="bg-green-50 rounded-2xl p-5 text-base text-green-900 border-2 border-green-100">
-                        <p class="mb-3 flex justify-between"><span class="text-green-700">Artikel:</span> <strong>${wizardData.name}</strong></p>
-                        <p class="mb-3 flex justify-between"><span class="text-green-700">Kategorie:</span> <strong>${wizardData.category}</strong></p>
-                        <p class="flex justify-between"><span class="text-green-700">Preis:</span> <strong>${wizardData.price ? wizardData.price + ' €' : 'Gratis'}</strong></p>
+                    <div class="bg-teal-50 rounded-2xl p-5 text-base text-teal-900 border-2 border-teal-100">
+                        <p class="mb-3 flex justify-between"><span class="text-teal-700">Artikel:</span> <strong>${wizardData.name}</strong></p>
+                        <p class="mb-3 flex justify-between"><span class="text-teal-700">Kategorie:</span> <strong>${wizardData.category}</strong></p>
+                        <p class="flex justify-between"><span class="text-teal-700">Preis:</span> <strong>${wizardData.price ? wizardData.price + ' €' : 'Gratis'}</strong></p>
                     </div>`;
             }
 
@@ -788,17 +794,17 @@
             const progress = Math.round((wizardStep / totalSteps) * 100);
 
             formContainer.innerHTML = `
-                <div class="absolute top-0 left-0 right-0 h-2 bg-green-100 rounded-t-2xl overflow-hidden">
-                    <div class="bg-green-500 h-full transition-all duration-300" style="width: ${progress}%"></div>
+                <div class="absolute top-0 left-0 right-0 h-2 bg-teal-100 rounded-t-2xl overflow-hidden">
+                    <div class="bg-teal-500 h-full transition-all duration-300" style="width: ${progress}%"></div>
                 </div>
                 <div class="text-center mb-6 mt-4">
-                    <h2 class="text-2xl font-black text-green-900 mb-1">${stepTitle}</h2>
+                    <h2 class="text-2xl font-black text-teal-900 mb-1">${stepTitle}</h2>
                     <p class="text-gray-500 text-sm px-2">${stepText}</p>
                 </div>
                 <div class="w-full mb-8">${inner}</div>
                 <div class="flex gap-3 mt-auto pt-4">
                     ${wizardStep > 1 ? `<button type="button" id="btn-w-back" class="px-5 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition"><i class="fa-solid fa-arrow-left"></i></button>` : ''}
-                    <button type="button" id="btn-w-next" class="flex-1 bg-green-700 text-white font-bold rounded-xl py-3.5 shadow-md hover:bg-green-800 transition flex justify-center items-center gap-2">
+                    <button type="button" id="btn-w-next" class="flex-1 bg-teal-700 text-white font-bold rounded-xl py-3.5 shadow-md hover:bg-teal-800 transition flex justify-center items-center gap-2">
                         ${wizardStep === totalSteps ? '<i class="fa-solid fa-paper-plane"></i> Abschicken' : 'Weiter <i class="fa-solid fa-arrow-right"></i>'}
                     </button>
                 </div>
@@ -894,7 +900,7 @@
                         selectedItem = { id: newDocRef.id, name: wizardData.name.trim(), description: wizardData.description.trim(), category: wizardData.category, price: wizardData.price ? Number(wizardData.price) : null, sellerName: currentUser, images: wizardData.images, status: 'available' };
                         
                         if (window.confetti) {
-                            window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#15803d', '#4ade80', '#fef08a'], zIndex: 1000 });
+                            window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#0f766e', '#2dd4bf', '#fef08a'], zIndex: 1000 });
                         }
                         
                         goTo('detail');
@@ -927,7 +933,7 @@
 
         function createItemCard(item) {
             const card = document.createElement('div');
-            card.className = 'bg-white rounded-2xl shadow-sm border border-green-100 overflow-hidden cursor-pointer transform transition hover:-translate-y-1 hover:shadow-md flex flex-col relative';
+            card.className = 'bg-white rounded-2xl shadow-sm border border-teal-100 overflow-hidden cursor-pointer transform transition hover:-translate-y-1 hover:shadow-md flex flex-col relative';
             
             const isNew = !seenItems.includes(item.id) && item.sellerName !== currentUser;
 
@@ -947,10 +953,10 @@
             const checkedAttr = homeAdminSelected.has(item.id) ? 'checked' : '';
 
             card.innerHTML = `
-                ${isAdmin ? `<div class="absolute top-2 left-2 z-30 bg-white/90 backdrop-blur rounded-lg flex items-center justify-center p-1.5 shadow-md border border-gray-200"><input type="checkbox" class="admin-home-cb w-5 h-5 accent-green-600 cursor-pointer pointer-events-auto" data-id="${item.id}" ${checkedAttr}></div>` : ''}
+                ${isAdmin ? `<div class="absolute top-2 left-2 z-30 bg-white/90 backdrop-blur rounded-lg flex items-center justify-center p-1.5 shadow-md border border-gray-200"><input type="checkbox" class="admin-home-cb w-5 h-5 accent-teal-600 cursor-pointer pointer-events-auto" data-id="${item.id}" ${checkedAttr}></div>` : ''}
                 ${isNew && !isArchived ? `<div class="absolute -right-2 -top-2 bg-amber-400 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-md z-20"><i class="fa-solid fa-sparkles"></i></div>` : ''}
-                <div class="relative w-full h-40 sm:h-48 bg-green-50 shrink-0">
-                    ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover ${(isSold || isArchived) ? 'opacity-40 grayscale' : ''}" />` : `<div class="flex items-center justify-center h-full text-green-200"><i class="fa-solid fa-camera text-4xl"></i></div>`}
+                <div class="relative w-full h-40 sm:h-48 bg-teal-50 shrink-0">
+                    ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover ${(isSold || isArchived) ? 'opacity-40 grayscale' : ''}" />` : `<div class="flex items-center justify-center h-full text-teal-200"><i class="fa-solid fa-camera text-4xl"></i></div>`}
                     ${isSold ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-2"><span class="bg-red-500/90 backdrop-blur-sm text-white text-xs sm:text-sm font-bold py-1.5 px-3 rounded-xl uppercase tracking-wider shadow-lg transform -rotate-12 border border-red-400 text-center leading-tight">Vergeben an<br>${item.buyerName || 'jemand'}</span></div>` : ''}
                     ${isArchived ? `<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 px-2"><span class="bg-blue-600/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wide shadow-sm">Archiviert</span></div>` : ''}
                 </div>
@@ -958,12 +964,12 @@
                     <div>
                         <h4 class="font-bold text-gray-800 text-sm sm:text-base truncate mb-1">${item.name}</h4>
                         <div class="text-[11px] sm:text-xs text-gray-500 mb-2 truncate flex items-center gap-1">
-                            <i class="fa-solid fa-user-tag text-green-600/70"></i> ${item.sellerName || 'Unbekannt'}
+                            <i class="fa-solid fa-user-tag text-teal-600/70"></i> ${item.sellerName || 'Unbekannt'}
                         </div>
                     </div>
                     <div class="flex justify-between items-end mt-1">
-                        <span class="text-[10px] sm:text-xs text-green-800 bg-green-100 px-2 py-1 rounded-md font-medium truncate max-w-[55%] shadow-sm">${item.category}</span>
-                        <span class="font-bold text-green-700 text-sm sm:text-base whitespace-nowrap">${item.price ? item.price + ' €' : 'Gratis'}</span>
+                        <span class="text-[10px] sm:text-xs text-teal-800 bg-teal-100 px-2 py-1 rounded-md font-medium truncate max-w-[55%] shadow-sm">${item.category}</span>
+                        <span class="font-bold text-teal-700 text-sm sm:text-base whitespace-nowrap">${item.price ? item.price + ' €' : 'Gratis'}</span>
                     </div>
                 </div>
             `;
@@ -978,19 +984,19 @@
             searchBox.className = 'relative mb-3 flex gap-2 max-w-4xl mx-auto';
             searchBox.innerHTML = `
                 <div class="relative flex-1">
-                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-green-700 opacity-50"></i>
-                    <input type="text" id="searchInput" placeholder="Artikel, Anbieter, Kategorie..." value="${currentSearch}" class="w-full bg-green-50/50 border border-green-100 rounded-2xl py-2.5 pl-11 pr-4 outline-none focus:ring-2 focus:ring-green-500 shadow-inner text-sm">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-teal-700 opacity-50"></i>
+                    <input type="text" id="searchInput" placeholder="Artikel, Anbieter, Kategorie..." value="${currentSearch}" class="w-full bg-teal-50/50 border border-teal-100 rounded-2xl py-2.5 pl-11 pr-4 outline-none focus:ring-2 focus:ring-teal-500 shadow-inner text-sm">
                 </div>
                 <div class="relative z-50">
-                    <button id="btnSortToggle" class="bg-white border border-green-100 rounded-2xl w-11 h-full flex justify-center items-center text-green-700 shadow-sm hover:bg-green-50">
+                    <button id="btnSortToggle" class="bg-white border border-teal-100 rounded-2xl w-11 h-full flex justify-center items-center text-teal-700 shadow-sm hover:bg-teal-50">
                         <i class="fa-solid fa-arrow-down-short-wide"></i>
                     </button>
-                    <div id="sortDropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-green-50 py-2">
-                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-gray-700 ${currentSort === 'date-desc' ? 'font-bold text-green-700' : ''}" data-sort="date-desc"><i class="fa-regular fa-clock w-5"></i> Neueste zuerst</button>
-                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-gray-700 ${currentSort === 'name-asc' ? 'font-bold text-green-700' : ''}" data-sort="name-asc"><i class="fa-solid fa-a w-5"></i> Alphabetisch (A-Z)</button>
-                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-gray-700 ${currentSort === 'price-asc' ? 'font-bold text-green-700' : ''}" data-sort="price-asc"><i class="fa-solid fa-euro-sign w-5"></i> Günstigste zuerst</button>
-                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-gray-700 ${currentSort === 'seller-asc' ? 'font-bold text-green-700' : ''}" data-sort="seller-asc"><i class="fa-solid fa-user w-5"></i> Nach Anbieter</button>
-                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-gray-700 ${currentSort === 'category-asc' ? 'font-bold text-green-700' : ''}" data-sort="category-asc"><i class="fa-solid fa-tags w-5"></i> Nach Kategorie</button>
+                    <div id="sortDropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-teal-50 py-2">
+                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-teal-50 text-gray-700 ${currentSort === 'date-desc' ? 'font-bold text-teal-700' : ''}" data-sort="date-desc"><i class="fa-regular fa-clock w-5"></i> Neueste zuerst</button>
+                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-teal-50 text-gray-700 ${currentSort === 'name-asc' ? 'font-bold text-teal-700' : ''}" data-sort="name-asc"><i class="fa-solid fa-a w-5"></i> Alphabetisch (A-Z)</button>
+                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-teal-50 text-gray-700 ${currentSort === 'price-asc' ? 'font-bold text-teal-700' : ''}" data-sort="price-asc"><i class="fa-solid fa-euro-sign w-5"></i> Günstigste zuerst</button>
+                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-teal-50 text-gray-700 ${currentSort === 'seller-asc' ? 'font-bold text-teal-700' : ''}" data-sort="seller-asc"><i class="fa-solid fa-user w-5"></i> Nach Anbieter</button>
+                        <button class="sort-option w-full text-left px-4 py-2 text-sm hover:bg-teal-50 text-gray-700 ${currentSort === 'category-asc' ? 'font-bold text-teal-700' : ''}" data-sort="category-asc"><i class="fa-solid fa-tags w-5"></i> Nach Kategorie</button>
                     </div>
                 </div>
             `;
@@ -1002,7 +1008,7 @@
 
             categories.forEach(cat => {
                 const btn = document.createElement('button');
-                btn.className = `whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 relative ${currentFilter === cat ? 'bg-green-700 text-white shadow-md transform scale-105' : 'bg-white text-green-800 border border-green-200 hover:bg-green-50'}`;
+                btn.className = `whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 relative ${currentFilter === cat ? 'bg-teal-700 text-white shadow-md transform scale-105' : 'bg-white text-teal-800 border border-teal-200 hover:bg-teal-50'}`;
                 
                 if (cat === 'Neu für Dich') {
                     btn.innerHTML = `<i class="fa-solid fa-sparkles text-amber-300"></i> Neu für Dich ${countNew > 0 ? `<span class="ml-1 bg-amber-400 text-white text-[10px] px-1.5 py-0.5 rounded-full">${countNew}</span>` : ''}`;
@@ -1019,7 +1025,7 @@
             mainContent.appendChild(topBar);
 
             const container = document.createElement('div');
-            container.className = 'p-4 sm:p-6 fade-in pb-24'; 
+            container.className = 'p-4 sm:p-6 fade-in pb-10'; 
 
             let filteredItems = items.filter(item => {
                 const isNotArchived = item.status !== 'archived';
@@ -1049,15 +1055,15 @@
 
             if (filteredItems.length === 0) {
                 if (currentFilter === 'Neu für Dich') {
-                    container.innerHTML = `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-mug-hot text-6xl mb-4"></i><p class="font-bold text-lg px-4">Du bist auf dem neuesten Stand!</p><p class="text-sm mt-2">Keine ungesehenen Artikel vorhanden.</p></div>`;
+                    container.innerHTML = `<div class="text-center text-teal-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-mug-hot text-6xl mb-4"></i><p class="font-bold text-lg px-4">Du bist auf dem neuesten Stand!</p><p class="text-sm mt-2">Keine ungesehenen Artikel vorhanden.</p></div>`;
                 } else {
-                    container.innerHTML = `<div class="text-center text-green-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-box-open text-6xl mb-4"></i><p class="font-bold text-lg">Keine Artikel gefunden.</p></div>`;
+                    container.innerHTML = `<div class="text-center text-teal-700 opacity-60 py-16 flex flex-col items-center"><i class="fa-solid fa-box-open text-6xl mb-4"></i><p class="font-bold text-lg">Keine Artikel gefunden.</p></div>`;
                 }
             } else {
                 if (currentFilter === 'Neu für Dich') {
                     const markAllContainer = document.createElement('div');
                     markAllContainer.className = 'mb-6 flex justify-end';
-                    markAllContainer.innerHTML = `<button class="bg-white text-green-700 font-bold px-4 py-2 rounded-xl text-sm border border-green-200 hover:bg-green-50 shadow-sm transition flex items-center gap-2"><i class="fa-solid fa-check-double"></i> Alle als gesehen markieren</button>`;
+                    markAllContainer.innerHTML = `<button class="bg-white text-teal-700 font-bold px-4 py-2 rounded-xl text-sm border border-teal-200 hover:bg-teal-50 shadow-sm transition flex items-center gap-2"><i class="fa-solid fa-check-double"></i> Alle als gesehen markieren</button>`;
                     markAllContainer.querySelector('button').onclick = () => {
                         filteredItems.forEach(i => {
                             if (!seenItems.includes(i.id)) seenItems.push(i.id);
@@ -1082,10 +1088,10 @@
                         currentGroup = itemGroup;
                         if (isGrouped) {
                             const groupTitle = document.createElement('h3');
-                            groupTitle.className = 'font-bold text-green-900 mt-8 mb-4 text-lg flex items-center gap-2 first:mt-0';
+                            groupTitle.className = 'font-bold text-teal-900 mt-8 mb-4 text-lg flex items-center gap-2 first:mt-0';
                             groupTitle.innerHTML = currentSort === 'seller-asc' 
-                                ? `<i class="fa-solid fa-user-circle text-green-600"></i> ${itemGroup}`
-                                : `<i class="fa-solid fa-tag text-green-600"></i> ${itemGroup}`;
+                                ? `<i class="fa-solid fa-user-circle text-teal-600"></i> ${itemGroup}`
+                                : `<i class="fa-solid fa-tag text-teal-600"></i> ${itemGroup}`;
                             container.appendChild(groupTitle);
                         }
                         currentGrid = document.createElement('div');
@@ -1101,7 +1107,7 @@
             if (isAdmin && filteredItems.length > 0) {
                 const actionBar = document.createElement('div');
                 actionBar.id = 'home-bulk-bar';
-                actionBar.className = `fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-4 z-[100] transition-all w-[90%] max-w-sm justify-between ${homeAdminSelected.size > 0 ? '' : 'hidden'}`;
+                actionBar.className = `fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-4 z-[100] transition-all w-[90%] max-w-sm justify-between ${homeAdminSelected.size > 0 ? '' : 'hidden'}`;
                 actionBar.innerHTML = `
                     <span id="home-bulk-count" class="font-bold text-sm whitespace-nowrap">${homeAdminSelected.size} gewählt</span>
                     <div class="flex gap-2">
@@ -1166,7 +1172,7 @@
 
         function renderAddForm(editItem = null) {
             const formContainer = document.createElement('div');
-            formContainer.className = 'p-5 sm:p-8 fade-in w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl my-6 border border-green-50';
+            formContainer.className = 'p-5 sm:p-8 fade-in w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl my-6 border border-teal-50 mb-10';
             
             const vName = editItem ? editItem.name : '';
             const vDesc = editItem ? editItem.description : '';
@@ -1175,16 +1181,16 @@
 
             formContainer.innerHTML = `
                 <form id="item-form">
-                    <h2 class="text-2xl font-bold text-green-900 mb-6 flex items-center gap-2">
-                        <i class="fa-solid ${editItem ? 'fa-pen' : 'fa-hand-holding-heart'} text-green-600"></i> 
+                    <h2 class="text-2xl font-bold text-teal-900 mb-6 flex items-center gap-2">
+                        <i class="fa-solid ${editItem ? 'fa-pen' : 'fa-hand-holding-heart'} text-teal-600"></i> 
                         ${editItem ? 'Artikel bearbeiten' : 'Neuer Artikel'}
                     </h2>
                     
                     <div class="mb-5">
-                        <label class="block text-sm font-semibold text-green-900 mb-2">Fotos</label>
-                        <div class="relative w-full min-h-[140px] border-2 border-dashed border-green-300 rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-center bg-green-50/50 cursor-pointer hover:bg-green-50 transition">
-                            <div id="img-placeholder" class="text-center text-green-600/60 w-full py-4 pointer-events-none">
-                                <i class="fa-solid fa-cloud-arrow-up text-4xl mb-2 text-green-400"></i>
+                        <label class="block text-sm font-semibold text-teal-900 mb-2">Fotos</label>
+                        <div class="relative w-full min-h-[140px] border-2 border-dashed border-teal-300 rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-center bg-teal-50/50 cursor-pointer hover:bg-teal-50 transition">
+                            <div id="img-placeholder" class="text-center text-teal-600/60 w-full py-4 pointer-events-none">
+                                <i class="fa-solid fa-cloud-arrow-up text-4xl mb-2 text-teal-400"></i>
                                 <p class="text-sm font-medium">Bilder hier antippen</p>
                             </div>
                             <div id="img-preview-container" class="hidden flex flex-wrap gap-3 w-full relative z-30 justify-center"></div>
@@ -1193,29 +1199,29 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-green-900 mb-1.5">Titel</label>
-                        <input type="text" id="add-name" value="${vName}" required class="w-full border-2 border-green-100 rounded-xl p-3 text-base outline-none focus:border-green-500">
+                        <label class="block text-sm font-semibold text-teal-900 mb-1.5">Titel</label>
+                        <input type="text" id="add-name" value="${vName}" required class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500">
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-green-900 mb-1.5">Beschreibung</label>
-                        <textarea id="add-desc" rows="3" class="w-full border-2 border-green-100 rounded-xl p-3 text-base outline-none focus:border-green-500">${vDesc}</textarea>
+                        <label class="block text-sm font-semibold text-teal-900 mb-1.5">Beschreibung</label>
+                        <textarea id="add-desc" rows="3" class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500">${vDesc}</textarea>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 mb-6">
                         <div>
-                            <label class="block text-sm font-semibold text-green-900 mb-1.5">Kategorie</label>
-                            <select id="add-cat" class="w-full border-2 border-green-100 rounded-xl p-3 text-base outline-none focus:border-green-500 bg-white">
+                            <label class="block text-sm font-semibold text-teal-900 mb-1.5">Kategorie</label>
+                            <select id="add-cat" class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500 bg-white">
                                 ${baseCategories.map(c => `<option value="${c}" ${c === vCat ? 'selected' : ''}>${c}</option>`).join('')}
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-green-900 mb-1.5">Preis (€)</label>
-                            <input type="number" id="add-price" value="${vPrice}" class="w-full border-2 border-green-100 rounded-xl p-3 text-base outline-none focus:border-green-500" placeholder="Gratis">
+                            <label class="block text-sm font-semibold text-teal-900 mb-1.5">Preis (€)</label>
+                            <input type="number" id="add-price" value="${vPrice}" class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500" placeholder="Gratis">
                         </div>
                     </div>
 
-                    <button type="submit" id="btn-save" class="w-full bg-green-700 text-white font-bold rounded-xl py-3.5 shadow-md hover:bg-green-800 transition flex justify-center items-center gap-2">
+                    <button type="submit" id="btn-save" class="w-full bg-teal-700 text-white font-bold rounded-xl py-3.5 shadow-md hover:bg-teal-800 transition flex justify-center items-center gap-2">
                         <i class="fa-solid ${editItem ? 'fa-floppy-disk' : 'fa-paper-plane'}"></i> <span id="btn-save-text">${editItem ? 'Speichern' : 'Hochladen'}</span>
                     </button>
                 </form>
@@ -1299,9 +1305,8 @@
                         
                         selectedItem = { id: newDocRef.id, ...dataObj };
                         
-                        // Konfetti auch im normalen + Menü! 🎉
                         if (window.confetti) {
-                            window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#15803d', '#4ade80', '#fef08a'], zIndex: 1000 });
+                            window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#0f766e', '#2dd4bf', '#fef08a'], zIndex: 1000 });
                         }
                         
                         goTo('detail');
@@ -1330,7 +1335,7 @@
 
             let imagesHtml = '';
             if (displayImages.length > 0) {
-                imagesHtml = `<div class="relative w-full h-64 sm:h-96 bg-green-50 group">
+                imagesHtml = `<div class="relative w-full h-64 sm:h-96 bg-teal-50 group">
                     <div id="image-carousel" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory h-full scroll-smooth">`;
                 
                 displayImages.forEach((img, idx) => {
@@ -1341,10 +1346,10 @@
 
                 if (displayImages.length > 1) {
                     imagesHtml += `
-                        <button id="carousel-prev" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-green-900 w-10 h-10 rounded-full shadow-lg flex items-center justify-center z-20 backdrop-blur-sm transition text-lg">
+                        <button id="carousel-prev" class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-teal-900 w-10 h-10 rounded-full shadow-lg flex items-center justify-center z-20 backdrop-blur-sm transition text-lg">
                             <i class="fa-solid fa-chevron-left"></i>
                         </button>
-                        <button id="carousel-next" class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-green-900 w-10 h-10 rounded-full shadow-lg flex items-center justify-center z-20 backdrop-blur-sm transition text-lg">
+                        <button id="carousel-next" class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-teal-900 w-10 h-10 rounded-full shadow-lg flex items-center justify-center z-20 backdrop-blur-sm transition text-lg">
                             <i class="fa-solid fa-chevron-right"></i>
                         </button>
                         <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-20 bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-sm">
@@ -1354,15 +1359,15 @@
                 }
                 imagesHtml += `</div>`;
             } else {
-                imagesHtml = `<div class="relative w-full h-64 sm:h-96 bg-green-50 flex items-center justify-center text-green-200"><i class="fa-solid fa-image text-6xl"></i></div>`;
+                imagesHtml = `<div class="relative w-full h-64 sm:h-96 bg-teal-50 flex items-center justify-center text-teal-200"><i class="fa-solid fa-image text-6xl"></i></div>`;
             }
 
             let actionButtonsHtml = '<div class="flex gap-2 sm:gap-3">';
-            const shareBtnHtml = `<button id="btn-share" class="w-14 sm:w-16 py-3.5 sm:py-4 bg-white border-2 border-green-600 text-green-700 rounded-xl flex items-center justify-center shadow-md hover:bg-green-50 transition text-xl shrink-0" title="Familie informieren (Teilen)"><i class="fa-solid fa-share-nodes"></i></button>`;
+            const shareBtnHtml = `<button id="btn-share" class="w-14 sm:w-16 py-3.5 sm:py-4 bg-white border-2 border-teal-600 text-teal-700 rounded-xl flex items-center justify-center shadow-md hover:bg-teal-50 transition text-xl shrink-0" title="Familie informieren (Teilen)"><i class="fa-solid fa-share-nodes"></i></button>`;
 
             if (!isArchived) {
                 if (!isSold) {
-                    actionButtonsHtml += `<button id="btn-buy" class="flex-1 bg-green-700 text-white font-bold rounded-xl py-3.5 sm:py-4 shadow-md hover:bg-green-800 transition text-lg flex items-center justify-center gap-2"><i class="fa-solid fa-heart"></i> Das möchte ich!</button>`;
+                    actionButtonsHtml += `<button id="btn-buy" class="flex-1 bg-teal-700 text-white font-bold rounded-xl py-3.5 sm:py-4 shadow-md hover:bg-teal-800 transition text-lg flex items-center justify-center gap-2"><i class="fa-solid fa-heart"></i> Das möchte ich!</button>`;
                 } else if (isBuyer) {
                     actionButtonsHtml += `<button id="btn-cancel-buy" class="flex-1 bg-orange-600 text-white font-bold rounded-xl py-3.5 sm:py-4 shadow-md hover:bg-orange-700 transition text-base flex items-center justify-center gap-2"><i class="fa-solid fa-rotate-left"></i> Nee, doch nicht</button>`;
                 } else {
@@ -1388,18 +1393,18 @@
 
                 <div class="p-5 sm:p-8 pt-6">
                     <div class="flex justify-between items-start mb-4">
-                        <h2 class="text-2xl sm:text-3xl font-bold text-green-900 leading-tight">${item.name}</h2>
-                        <span class="text-2xl sm:text-3xl font-black text-green-700 whitespace-nowrap ml-4">${item.price ? item.price + ' €' : 'Gratis'}</span>
+                        <h2 class="text-2xl sm:text-3xl font-bold text-teal-900 leading-tight">${item.name}</h2>
+                        <span class="text-2xl sm:text-3xl font-black text-teal-700 whitespace-nowrap ml-4">${item.price ? item.price + ' €' : 'Gratis'}</span>
                     </div>
                     
-                    <div class="inline-block bg-green-100 text-green-800 text-sm px-3 py-1.5 rounded-lg font-bold mb-6 shadow-sm">${item.category}</div>
+                    <div class="inline-block bg-teal-100 text-teal-800 text-sm px-3 py-1.5 rounded-lg font-bold mb-6 shadow-sm">${item.category}</div>
                     <p class="text-gray-700 leading-relaxed mb-8 whitespace-pre-line text-sm sm:text-base">${item.description || 'Keine Beschreibung angegeben.'}</p>
                     
-                    <div class="bg-green-50 rounded-2xl p-4 sm:p-5 flex items-center mb-8 border border-green-100">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-green-200 flex items-center justify-center text-green-800 font-bold text-xl sm:text-2xl mr-4 shadow-inner">${(item.sellerName || '?').charAt(0).toUpperCase()}</div>
+                    <div class="bg-teal-50 rounded-2xl p-4 sm:p-5 flex items-center mb-8 border border-teal-100">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-teal-200 flex items-center justify-center text-teal-800 font-bold text-xl sm:text-2xl mr-4 shadow-inner">${(item.sellerName || '?').charAt(0).toUpperCase()}</div>
                         <div>
-                            <p class="text-xs sm:text-sm text-green-600 font-bold uppercase tracking-wider mb-0.5">Anbieter</p>
-                            <p class="font-bold text-green-900 text-lg sm:text-xl">${item.sellerName || 'Unbekannt'}</p>
+                            <p class="text-xs sm:text-sm text-teal-600 font-bold uppercase tracking-wider mb-0.5">Anbieter</p>
+                            <p class="font-bold text-teal-900 text-lg sm:text-xl">${item.sellerName || 'Unbekannt'}</p>
                         </div>
                     </div>
 
@@ -1407,12 +1412,12 @@
                         ${isOwner ? `
                             <div class="flex gap-2 sm:gap-3 pt-6 border-t border-gray-100 flex-col sm:flex-row">
                                 ${isSold ? `
-                                    <button id="btn-reset" class="flex-1 bg-white border-2 border-green-100 text-green-700 font-bold rounded-xl py-3 hover:bg-green-50 transition text-sm sm:text-base"><i class="fa-solid fa-rotate-left mr-2"></i> Freigeben</button>
+                                    <button id="btn-reset" class="flex-1 bg-white border-2 border-teal-100 text-teal-700 font-bold rounded-xl py-3 hover:bg-teal-50 transition text-sm sm:text-base"><i class="fa-solid fa-rotate-left mr-2"></i> Freigeben</button>
                                     <button id="btn-archive" class="flex-1 bg-white border-2 border-blue-100 text-blue-600 font-bold rounded-xl py-3 hover:bg-blue-50 transition text-sm sm:text-base"><i class="fa-solid fa-box-archive mr-2"></i> Archivieren</button>
                                 ` : (isArchived ? `
-                                    <button id="btn-unarchive" class="w-full bg-white border-2 border-green-100 text-green-700 font-bold rounded-xl py-3 hover:bg-green-50 transition text-sm sm:text-base"><i class="fa-solid fa-rotate-left mr-2"></i> Will ich doch nicht (Reaktivieren)</button>
+                                    <button id="btn-unarchive" class="w-full bg-white border-2 border-teal-100 text-teal-700 font-bold rounded-xl py-3 hover:bg-teal-50 transition text-sm sm:text-base"><i class="fa-solid fa-rotate-left mr-2"></i> Will ich doch nicht (Reaktivieren)</button>
                                 ` : `
-                                    <button id="btn-edit" class="flex-1 bg-white border-2 border-green-100 text-green-700 font-bold rounded-xl py-3 hover:bg-green-50 transition text-sm sm:text-base"><i class="fa-solid fa-pen mr-2"></i> Bearbeiten</button>
+                                    <button id="btn-edit" class="flex-1 bg-white border-2 border-teal-100 text-teal-700 font-bold rounded-xl py-3 hover:bg-teal-50 transition text-sm sm:text-base"><i class="fa-solid fa-pen mr-2"></i> Bearbeiten</button>
                                 `)}
                                 ${isAdmin ? `<button id="btn-delete" class="w-full sm:w-auto mt-2 sm:mt-0 bg-white border-2 border-red-100 text-red-500 font-bold rounded-xl py-3 px-6 hover:bg-red-50 transition text-sm sm:text-base"><i class="fa-solid fa-trash mr-2"></i> Löschen</button>` : ''}
                             </div>
@@ -1574,19 +1579,19 @@
             });
 
             let html = `
-                <div class="bg-green-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl mb-8 relative overflow-hidden">
+                <div class="bg-teal-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl mb-8 relative overflow-hidden">
                     <i class="fa-solid fa-crown absolute -right-6 -top-6 text-[8rem] opacity-10"></i>
                     <h2 class="font-black text-3xl mb-2 relative z-10">Admin Dashboard</h2>
-                    <p class="text-green-200 text-sm sm:text-base relative z-10 mb-6">Übersicht aller Verkäufe.</p>
+                    <p class="text-teal-200 text-sm sm:text-base relative z-10 mb-6">Übersicht aller Verkäufe.</p>
                     
                     <div class="flex gap-4 flex-wrap relative z-10">
                         <div class="bg-black/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
-                            <span class="text-xs sm:text-sm font-bold text-green-100 block mb-1">Gesamtumsatz</span>
+                            <span class="text-xs sm:text-sm font-bold text-teal-100 block mb-1">Gesamtumsatz</span>
                             <span class="text-2xl sm:text-3xl font-black">${totalRevenue} €</span>
                         </div>
                         <button id="btn-open-master-archive" class="bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl p-4 sm:p-5 text-left transition flex-1 flex items-center justify-between">
                             <div>
-                                <span class="text-xs sm:text-sm font-bold text-green-100 block mb-1">Archiv-Zentrale</span>
+                                <span class="text-xs sm:text-sm font-bold text-teal-100 block mb-1">Archiv-Zentrale</span>
                                 <span class="text-base sm:text-lg font-bold"><i class="fa-solid fa-box-archive mr-2"></i> Alle Archivartikel</span>
                             </div>
                             <i class="fa-solid fa-chevron-right text-xl"></i>
@@ -1596,30 +1601,30 @@
             `;
 
             if (Object.keys(grouped).length === 0) {
-                html += `<div class="bg-white rounded-2xl p-10 text-center text-gray-500 shadow-sm border border-green-50"><i class="fa-solid fa-wind text-5xl mb-4 opacity-50"></i><p class="text-lg font-bold">Noch keine Reservierungen vorhanden.</p></div>`;
+                html += `<div class="bg-white rounded-2xl p-10 text-center text-gray-500 shadow-sm border border-teal-50"><i class="fa-solid fa-wind text-5xl mb-4 opacity-50"></i><p class="text-lg font-bold">Noch keine Reservierungen vorhanden.</p></div>`;
             } else {
                 for (const [buyer, data] of Object.entries(grouped)) {
                     html += `
-                        <div class="bg-white rounded-2xl shadow-md mb-6 border border-green-100 overflow-hidden">
-                            <div class="bg-green-100 p-4 sm:p-5 font-bold text-green-900 flex justify-between items-center">
-                                <span class="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl"><i class="fa-solid fa-user-tag text-green-600"></i> ${buyer}</span>
-                                <span class="bg-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-sm text-green-800 text-lg sm:text-xl">${data.total > 0 ? data.total + ' €' : '0 €'}</span>
+                        <div class="bg-white rounded-2xl shadow-md mb-6 border border-teal-100 overflow-hidden">
+                            <div class="bg-teal-100 p-4 sm:p-5 font-bold text-teal-900 flex justify-between items-center">
+                                <span class="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl"><i class="fa-solid fa-user-tag text-teal-600"></i> ${buyer}</span>
+                                <span class="bg-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-sm text-teal-800 text-lg sm:text-xl">${data.total > 0 ? data.total + ' €' : '0 €'}</span>
                             </div>
-                            <ul class="divide-y divide-green-50">
+                            <ul class="divide-y divide-teal-50">
                                 ${data.items.map(item => {
                                     const thumb = item.images && item.images.length > 0 ? item.images[0] : null;
                                     const isArchived = item.status === 'archived';
                                     return `
-                                    <li class="p-3 sm:p-5 flex justify-between items-center hover:bg-green-50 transition cursor-pointer item-row" data-id="${item.id}">
+                                    <li class="p-3 sm:p-5 flex justify-between items-center hover:bg-teal-50 transition cursor-pointer item-row" data-id="${item.id}">
                                         <div class="flex items-center overflow-hidden pr-2">
-                                            <input type="checkbox" class="admin-cb w-5 h-5 mr-3 accent-green-600 pointer-events-auto shrink-0" data-id="${item.id}">
-                                            ${thumb ? `<img src="${thumb}" class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover mr-3 sm:mr-4 shadow-sm border border-gray-200 shrink-0 ${isArchived ? 'grayscale opacity-70' : ''}">` : `<div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-green-50 mr-3 sm:mr-4 flex items-center justify-center text-green-300 shrink-0"><i class="fa-solid fa-box text-2xl"></i></div>`}
+                                            <input type="checkbox" class="admin-cb w-5 h-5 mr-3 accent-teal-600 pointer-events-auto shrink-0" data-id="${item.id}">
+                                            ${thumb ? `<img src="${thumb}" class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover mr-3 sm:mr-4 shadow-sm border border-gray-200 shrink-0 ${isArchived ? 'grayscale opacity-70' : ''}">` : `<div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-teal-50 mr-3 sm:mr-4 flex items-center justify-center text-teal-300 shrink-0"><i class="fa-solid fa-box text-2xl"></i></div>`}
                                             <div class="truncate">
                                                 <p class="font-bold text-gray-800 text-sm sm:text-base truncate">${item.name}${isArchived ? '<span class="text-[10px] sm:text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg ml-2 font-bold">Archiviert</span>' : ''}</p>
                                                 <p class="text-[11px] sm:text-xs text-gray-500 mt-0.5 font-medium truncate">von ${item.sellerName || 'Unbekannt'}</p>
                                             </div>
                                         </div>
-                                        <span class="font-bold text-green-700 text-base sm:text-xl shrink-0">${item.price ? item.price + ' €' : '0 €'}</span>
+                                        <span class="font-bold text-teal-700 text-base sm:text-xl shrink-0">${item.price ? item.price + ' €' : '0 €'}</span>
                                     </li>
                                     `
                                 }).join('')}
@@ -1647,7 +1652,7 @@
 
             if (Object.keys(grouped).length > 0) {
                 adminContainer.querySelectorAll('.admin-cb').forEach(cb => {
-                    cb.onclick = (e) => e.stopPropagation(); // Klick auf Checkbox öffnet nicht das Item
+                    cb.onclick = (e) => e.stopPropagation();
                     cb.onchange = (e) => {
                         if(e.target.checked) adminSelected.add(e.target.dataset.id);
                         else adminSelected.delete(e.target.dataset.id);
