@@ -50,8 +50,12 @@ for (const doc of fresh) {
   const seller = String(item.sellerName || 'Jemand').slice(0, 70);
   const url = 'https://wiesehro-glitch.github.io/familie-privater-flohmarkt-2026-x89q2k-as234t123casd15/?item=' + encodeURIComponent(doc.id);
 
-  // OneSignal's built-in "All" segment targets subscribed push devices.
-  // Unlike a fixed subscription ID, this also includes future family members.
+  // Exclude the posting profile via the OneSignal tag attached by index.html.
+  // A profile name is not authenticated; users sharing the same name are treated alike.
+  const sellerTag = seller.trim().toLocaleLowerCase('de-DE');
+  const audience = sellerTag
+    ? { filters: [{ field: 'tag', key: 'floh_seller', relation: '!=', value: sellerTag }] }
+    : { included_segments: ['All'] };
   const res = await fetch('https://api.onesignal.com/notifications?c=push', {
     method: 'POST',
     headers: {
@@ -61,9 +65,10 @@ for (const doc of fresh) {
     body: JSON.stringify({
       app_id: appId,
       target_channel: 'push',
-      included_segments: ['All'],
+      ...audience,
       headings: { en: 'Neuer Floh-Artikel! 🎉' },
       contents: { en: `${seller} hat "${name}" eingestellt.` },
+      ...(typeof item.imageUrl === 'string' && /^https:\/\//i.test(item.imageUrl) ? { chrome_web_image: item.imageUrl } : {}),
       url
     })
   });
