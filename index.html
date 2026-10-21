@@ -498,6 +498,21 @@
             }
         });
 
+        // Assign a OneSignal tag to the active local Floh profile.
+        // This is a convenience setting, not verified authentication.
+        async function syncFlohPushUser() {
+            const os = window.oneSignalInstance;
+            if (!os || !window.oneSignalReady) return;
+            try {
+                const user = (currentUser || '').trim().toLocaleLowerCase('de-DE');
+                if (user) await os.User.addTag('floh_seller', user);
+                else await os.User.removeTag('floh_seller');
+            } catch (error) {
+                console.warn('Floh Push Nutzer-Tag:', error);
+            }
+        }
+        window.addEventListener('flohpushedready', syncFlohPushUser);
+
         function updateHeaderUser() {
             document.getElementById('header-user-name').textContent = currentUser ? currentUser : 'Gast';
         }
@@ -655,6 +670,7 @@
                 currentUser = name;
                 localStorage.setItem('familyBazarUser', currentUser);
                 updateHeaderUser();
+                await syncFlohPushUser();
                 return true;
             }
             return false;
@@ -677,6 +693,7 @@
                     localStorage.removeItem('familyBazarUser');
                 }
                 updateHeaderUser();
+                await syncFlohPushUser();
                 renderCurrentView();
             }
         }
