@@ -529,6 +529,13 @@
             renderCurrentView();
         }
 
+        // After publishing, replace the creation view in browser history with home.
+        // This makes Back from the new article return to the overview.
+        function openNewlyCreatedArticle() {
+            history.replaceState({ view: 'home' }, '', cleanUrl);
+            goTo('detail');
+        }
+
         function goBack() {
             if (currentView !== 'home') {
                 if (!hasNavigated && initialItemId) {
@@ -1146,7 +1153,7 @@
                             window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#0f766e', '#2dd4bf', '#fef08a'], zIndex: 1000 });
                         }
 
-                        goTo('detail');
+                        openNewlyCreatedArticle();
                         showModal({
                             title: "Boom! Online! 🎉",
                             message: "Dein Artikel ist jetzt im Floh. Willst du direkt den Link in die Familiengruppe hauen?",
@@ -1567,7 +1574,7 @@
                             window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#0f766e', '#2dd4bf', '#fef08a'], zIndex: 1000 });
                         }
 
-                        goTo('detail');
+                        openNewlyCreatedArticle();
                         showModal({
                             title: "Boom! Online! 🎉",
                             message: "Dein Artikel ist jetzt im Floh. Willst du direkt den Link in die Familiengruppe hauen?",
