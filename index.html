@@ -1119,7 +1119,20 @@
                 };
             }
 
+            // Quick publish: Enter on the first wizard step publishes with optional defaults.
+            if (wizardStep === 1) {
+                document.getElementById('w-name').addEventListener('keydown', async (event) => {
+                    if (event.key !== 'Enter' || event.isComposing || event.repeat) return;
+                    event.preventDefault();
+                    if (!event.currentTarget.value.trim()) return;
+                    wizardStep = totalSteps;
+                    await executeWizardNext();
+                });
+            }
+
+            let wizardPublishing = false;
             const executeWizardNext = async () => {
+                if (wizardPublishing) return;
                 saveWizardData();
                 if (wizardStep === 1 && !wizardData.name.trim()) return showModal({ title: "Halt!", message: "Wie heißt der Artikel?"});
 
@@ -1127,6 +1140,7 @@
                     wizardStep++;
                     renderCurrentView();
                 } else {
+                    wizardPublishing = true;
                     const btnNext = document.getElementById('btn-w-next');
                     btnNext.disabled = true;
                     btnNext.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Lade...';
@@ -1161,6 +1175,7 @@
                             hideCancel: true
                         });
                     } catch (e) {
+                        wizardPublishing = false;
                         showModal({ title: "Fehler", message: e.message });
                         btnNext.disabled = false;
                     }
@@ -1233,10 +1248,10 @@
 
         function renderHome() {
             const topBar = document.createElement('div');
-            topBar.className = 'p-4 bg-white shadow-sm sticky top-0 z-20';
+            topBar.className = 'px-3 py-2 bg-white shadow-sm sticky top-0 z-20';
 
             const searchBox = document.createElement('div');
-            searchBox.className = 'relative mb-3 flex gap-2 max-w-4xl mx-auto';
+            searchBox.className = 'relative mb-1.5 flex gap-2 max-w-4xl mx-auto';
             searchBox.innerHTML = `
                 <div class="relative flex-1">
                     <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-teal-700 opacity-50"></i>
@@ -1257,13 +1272,13 @@
             `;
 
             const catScroll = document.createElement('div');
-            catScroll.className = 'flex overflow-x-auto hide-scroll gap-2 pb-1 max-w-4xl mx-auto';
+            catScroll.className = 'flex overflow-x-auto hide-scroll gap-1.5 py-0.5 max-w-4xl mx-auto';
 
             const countNew = items.filter(i => !seenItems.includes(i.id) && i.sellerName !== currentUser && i.status !== 'archived').length;
 
             categories.forEach(cat => {
                 const btn = document.createElement('button');
-                btn.className = `whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5 relative ${currentFilter === cat ? 'bg-teal-700 text-white shadow-md transform scale-105' : 'bg-white text-teal-800 border border-teal-200 hover:bg-teal-50'}`;
+                btn.className = `whitespace-nowrap px-3 py-1 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 relative ${currentFilter === cat ? 'bg-teal-700 text-white shadow-sm' : 'bg-white text-teal-800 border border-teal-200 hover:bg-teal-50'}`;
 
                 if (cat === 'Neu für Dich') {
                     btn.innerHTML = `<i class="fa-solid fa-sparkles text-amber-300"></i> Neu für Dich ${countNew > 0 ? `<span class="ml-1 bg-amber-400 text-white text-[10px] px-1.5 py-0.5 rounded-full">${countNew}</span>` : ''}`;
@@ -1459,7 +1474,7 @@
 
                     <div class="mb-4">
                         <label class="block text-sm font-semibold text-teal-900 mb-1.5">Wie heißt das gute Stück?</label>
-                        <input type="text" id="add-name" value="${vName}" required placeholder="z.B. Coole alte Lampe" class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500">
+                        <input type="text" id="add-name" value="${vName}" required autocomplete="off" placeholder="z.B. Coole alte Lampe" class="w-full border-2 border-teal-100 rounded-xl p-3 text-base outline-none focus:border-teal-500">
                     </div>
 
                     <div class="mb-4">
@@ -1488,6 +1503,16 @@
             `;
 
             mainContent.appendChild(formContainer);
+
+            // The name is the only required field. Enter submits the form directly.
+            const articleNameInput = document.getElementById('add-name');
+            articleNameInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' && !event.isComposing) {
+                    event.preventDefault();
+                    document.getElementById('item-form').requestSubmit();
+                }
+            });
+            if (!editItem) requestAnimationFrame(() => articleNameInput.focus());
 
             const fileInput = document.getElementById('file-input');
             const imgPreviewContainer = document.getElementById('img-preview-container');
