@@ -1118,25 +1118,7 @@
                             buyerName: null,
                             timestamp: Date.now()
                         });
-
-                        // Push-Nachricht senden
-                        fetch("https://onesignal.com/api/v1/notifications", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "Authorization": "Basic os_v2_app_3gkvq2yharfynnqkzsyu32jqsu676djdjyoeib5ttxuiyfi7fxioz5cngws7eztkhyecw4hnxxg2fjnhjg56hh5fjx2kiomyczwimya"
-                            },
-                            body: JSON.stringify({
-                                app_id: "d995586b-0704-4b86-b60a-ccb14de93095",
-                                included_segments: ["Subscribed Users"],
-                                headings: { en: "Neuer Floh-Artikel! 🎉", de: "Neuer Floh-Artikel! 🎉" },
-                                contents: {
-                                    en: `${currentUser} hat "${wizardData.name.trim()}" eingestellt.`,
-                                    de: `${currentUser} hat "${wizardData.name.trim()}" eingestellt.`
-                                },
-                                url: window.location.origin + window.location.pathname + "?item=" + newDocRef.id
-                            })
-                        }).catch(err => console.error("Push-Fehler:", err));
+                        // Push wird durch GitHub Actions versendet.
 
                         seenItems.push(newDocRef.id);
                         localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
@@ -1557,25 +1539,7 @@
                         dataObj.buyerName = null;
                         dataObj.timestamp = Date.now();
                         const newDocRef = await addDoc(collection(db, collPath), dataObj);
-
-                        // Push-Nachricht senden
-                        fetch("https://onesignal.com/api/v1/notifications", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "Authorization": "Basic os_v2_app_3gkvq2yharfynnqkzsyu32jqsu676djdjyoeib5ttxuiyfi7fxioz5cngws7eztkhyecw4hnxxg2fjnhjg56hh5fjx2kiomyczwimya"
-                            },
-                            body: JSON.stringify({
-                                app_id: "d995586b-0704-4b86-b60a-ccb14de93095",
-                                included_segments: ["Subscribed Users"],
-                                headings: { en: "Neuer Floh-Artikel! 🎉", de: "Neuer Floh-Artikel! 🎉" },
-                                contents: {
-                                    en: `${currentUser} hat "${dataObj.name}" eingestellt.`,
-                                    de: `${currentUser} hat "${dataObj.name}" eingestellt.`
-                                },
-                                url: window.location.origin + window.location.pathname + "?item=" + newDocRef.id
-                            })
-                        }).catch(err => console.error("Push-Fehler:", err));
+                        // Push wird durch GitHub Actions versendet.
 
                         seenItems.push(newDocRef.id);
                         localStorage.setItem('fbSeenItems', JSON.stringify(seenItems));
